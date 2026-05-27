@@ -17,8 +17,8 @@ api.interceptors.request.use((config) => {
 
 // مدیریت خطای 401 (انقضای توکن) بدون رفرش صفحه
 api.interceptors.response.use(
-  response => response,
-  error => {
+  (response) => response,
+  (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('role');
@@ -34,17 +34,13 @@ api.interceptors.response.use(
 export const getRecords = (skip = 0, limit = 100) =>
   api.get(`/records?skip=${skip}&limit=${limit}`);
 
-export const getRecord = (id) =>
-  api.get(`/records/${id}`);
+export const getRecord = (id) => api.get(`/records/${id}`);
 
-export const createRecord = (data, completePlanIds = []) =>
-  api.post('/records', { ...data, complete_plan_ids: completePlanIds });
+export const createRecord = (data) => api.post('/records', data);
 
-export const updateRecord = (id, data) =>
-  api.put(`/records/${id}`, data);
+export const updateRecord = (id, data) => api.put(`/records/${id}`, data);
 
-export const deleteRecord = (id) =>
-  api.delete(`/records/${id}`);
+export const deleteRecord = (id) => api.delete(`/records/${id}`);
 
 // ----- آپلود فایل اکسل -----
 export const uploadExcel = (file) => {
@@ -56,18 +52,15 @@ export const uploadExcel = (file) => {
 };
 
 // ----- فیلترها -----
-export const getFilterOptions = () =>
-  api.get('/filter-options');
+export const getFilterOptions = () => api.get('/filter-options');
 
 export const filterRecords = (params) =>
   api.post('/records/filter', null, { params });
 
 // ----- آمار -----
-export const getStats = () =>
-  api.get('/stats');
+export const getStats = () => api.get('/stats');
 
-export const getQuickStats = () =>
-  api.get('/quick-stats');
+export const getQuickStats = () => api.get('/quick-stats');
 
 // ----- احراز هویت -----
 export const loginUser = (username, password) => {
@@ -78,14 +71,15 @@ export const loginUser = (username, password) => {
 };
 
 // ثبت‌نام کاربر عادی (از صفحه Login)
-
-// و تابع registerUser را با این جایگزین کنید:
 export const registerUser = (username, password) =>
-  openApi.post('/register', { username, password, role: 'user', permissions: 'dashboard,data' });
+  api.post('/register', {
+    username,
+    password,
+    role: 'user',
+    permissions: 'dashboard,data',
+  });
 
-
-export const getCurrentUser = () =>
-  api.get('/users/me');
+export const getCurrentUser = () => api.get('/users/me');
 
 // ----- آنالیز پیشرفته -----
 export const getParetoData = (field) => api.get(`/analytics/pareto?field=${field}`);
@@ -95,16 +89,23 @@ export const getCorrelationData = () => api.get('/analytics/correlation');
 
 // ----- مدیریت خطوط و دکل‌ها -----
 export const getLines = () => api.get('/lines-towers/lines');
-export const getTowers = (lineId = '') => api.get(`/lines-towers/towers${lineId ? `?line_id=${lineId}` : ''}`);
-export const getMaintenanceRecords = (towerId = '') => api.get(`/lines-towers/maintenance-records${towerId ? `?tower_id=${towerId}` : ''}`);
-export const getPlannedTasks = (lineId = '') => api.get(`/lines-towers/planned-tasks${lineId ? `?line_id=${lineId}` : ''}`);
-export const getOpenPlansForLine = (lineId) => api.get(`/lines-towers/planned-tasks/line/${encodeURIComponent(lineId)}/open`);
+export const getTowers = (lineId = '') =>
+  api.get(`/lines-towers/towers${lineId ? `?line_id=${lineId}` : ''}`);
+export const getMaintenanceRecords = (towerId = '') =>
+  api.get(`/lines-towers/maintenance-records${towerId ? `?tower_id=${towerId}` : ''}`);
+export const getPlannedTasks = (lineId = '') =>
+  api.get(`/lines-towers/planned-tasks${lineId ? `?line_id=${lineId}` : ''}`);
+export const getOpenPlansForLine = (lineId) =>
+  api.get(`/lines-towers/planned-tasks/line/${encodeURIComponent(lineId)}/open`);
 export const createLine = (data) => api.post('/lines-towers/lines', data);
 export const createTower = (data) => api.post('/lines-towers/towers', data);
 export const createPlannedTask = (data) => api.post('/lines-towers/planned-tasks', data);
-export const completePlannedTask = (taskId) => api.put(`/lines-towers/planned-tasks/${taskId}/complete`);
-export const deletePlannedTask = (taskId) => api.delete(`/lines-towers/planned-tasks/${taskId}`);
-export const markTowerCompleted = (towerId) => api.post(`/lines-towers/towers/${towerId}/mark-completed`);
+export const completePlannedTask = (taskId) =>
+  api.put(`/lines-towers/planned-tasks/${taskId}/complete`);
+export const deletePlannedTask = (taskId) =>
+  api.delete(`/lines-towers/planned-tasks/${taskId}`);
+export const markTowerCompleted = (towerId) =>
+  api.post(`/lines-towers/towers/${towerId}/mark-completed`);
 export const updateAllTowerDates = () => api.post('/lines-towers/update-all-tower-dates');
 export const importFromRecords = () => api.post('/lines-towers/import-from-records');
 export const completePlans = (planIds) => api.post('/lines-towers/complete-plans', planIds);

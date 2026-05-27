@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from database import SessionLocal, engine
+from database import SessionLocal
 from models import Base, PowerLineRecord, User
 from schemas import Record, RecordCreate, RecordUpdate, FilterOptions
 from services.excel_parser import parse_excel
@@ -9,12 +9,11 @@ from auth import get_current_user, get_current_admin_user
 import tempfile
 import os
 
-Base.metadata.create_all(bind=engine)
-
 router = APIRouter(
     prefix="/api",
     tags=["records"],
 )
+
 
 def get_db():
     db = SessionLocal()
@@ -22,6 +21,7 @@ def get_db():
         yield db
     finally:
         db.close()
+
 
 # ===================== CRUD با احراز هویت =====================
 @router.get("/records", response_model=List[Record])
@@ -34,6 +34,7 @@ def get_records(
     records = db.query(PowerLineRecord).offset(skip).limit(limit).all()
     return records
 
+
 @router.get("/records/{record_id}", response_model=Record)
 def get_record(
     record_id: int,
@@ -44,6 +45,7 @@ def get_record(
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
     return record
+
 
 @router.post("/records", response_model=Record, status_code=201)
 def create_record(
@@ -56,6 +58,7 @@ def create_record(
     db.commit()
     db.refresh(db_record)
     return db_record
+
 
 @router.put("/records/{record_id}", response_model=Record)
 def update_record(
@@ -73,6 +76,7 @@ def update_record(
     db.refresh(db_record)
     return db_record
 
+
 @router.delete("/records/{record_id}")
 def delete_record(
     record_id: int,
@@ -85,6 +89,7 @@ def delete_record(
     db.delete(db_record)
     db.commit()
     return {"ok": True}
+
 
 # ===================== آپلود فایل اکسل =====================
 @router.post("/upload-excel")
@@ -109,6 +114,7 @@ def upload_excel(
         return {"message": f"{count} records imported successfully", "count": count}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 
 # ===================== فیلترها =====================
 @router.post("/records/filter", response_model=List[Record])
@@ -155,20 +161,27 @@ def filter_records(
             parts = rec.execution_date.split('/')
             if len(parts) == 3:
                 y, m, d = int(parts[0]), int(parts[1]), int(parts[2])
-                if date_from_year and y < date_from_year: continue
+                if date_from_year and y < date_from_year:
+                    continue
                 if date_from_year and y == date_from_year:
-                    if date_from_month and m < date_from_month: continue
-                    if date_from_month and m == date_from_month and date_from_day and d < date_from_day: continue
-                if date_to_year and y > date_to_year: continue
+                    if date_from_month and m < date_from_month:
+                        continue
+                    if date_from_month and m == date_from_month and date_from_day and d < date_from_day:
+                        continue
+                if date_to_year and y > date_to_year:
+                    continue
                 if date_to_year and y == date_to_year:
-                    if date_to_month and m > date_to_month: continue
-                    if date_to_month and m == date_to_month and date_to_day and d > date_to_day: continue
+                    if date_to_month and m > date_to_month:
+                        continue
+                    if date_to_month and m == date_to_month and date_to_day and d > date_to_day:
+                        continue
             else:
                 continue
         filtered.append(rec)
 
-    paginated = filtered[skip:skip+limit]
+    paginated = filtered[skip:skip + limit]
     return paginated
+
 
 # ===================== گزینه‌های فیلتر =====================
 @router.get("/filter-options", response_model=FilterOptions)
@@ -186,6 +199,7 @@ def get_filter_options(
         line_names=sorted(list(set(r.line_name for r in records if r.line_name))),
         work_descriptions=sorted(list(set(r.work_description for r in records if r.work_description))),
     )
+
 
 # ===================== آمار =====================
 @router.get("/stats")
@@ -207,6 +221,7 @@ def get_stats(
         "avg_personnel": round(avg_personnel, 2),
     }
 
+
 @router.get("/quick-stats")
 def quick_stats(
     db: Session = Depends(get_db),
@@ -219,6 +234,7 @@ def quick_stats(
         "hot": db.query(PowerLineRecord).filter(PowerLineRecord.program_type == "گرم").count(),
     }
 
+
 # ===================== خروجی JSON =====================
 @router.get("/export/json")
 def export_json(
@@ -227,6 +243,7 @@ def export_json(
 ):
     records = db.query(PowerLineRecord).all()
     return records
+
 
 @router.post("/export/filtered-json")
 def export_filtered_json(

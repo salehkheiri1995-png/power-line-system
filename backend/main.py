@@ -5,7 +5,6 @@ from routers.items import router as items_router
 from routers.auth import router as auth_router
 from routers.lines_towers import router as lines_towers_router
 from routers.analytics import router as analytics_router
-from routers.auth import router as auth_router
 from database import engine, Base, SessionLocal
 from models import User
 from auth import get_password_hash
@@ -28,6 +27,7 @@ app.include_router(analytics_router)
 # ایجاد جداول و کاربر پیش‌فرض
 Base.metadata.create_all(bind=engine)
 
+
 def init_admin():
     db = SessionLocal()
     if not db.query(User).filter(User.username == "admin").first():
@@ -40,7 +40,9 @@ def init_admin():
         db.commit()
     db.close()
 
+
 init_admin()
+
 
 @app.get("/")
 def read_root():
