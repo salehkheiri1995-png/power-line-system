@@ -1,0 +1,84 @@
+# ========================
+# Python / FastAPI
+# ========================
+
+# محیط مجازی پایتون
+backend/venv/
+venv/
+env/
+.venv/
+
+# فایل‌های کش و کامپایل
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# پکیج‌های نصب‌شده
+*.egg-info/
+*.egg
+dist/
+build/
+
+# فایل‌های تست و لاگ
+.pytest_cache/
+*.log
+
+# فایل‌های محیطی (حاوی اطلاعات حساس)
+.env
+.env.local
+.env.*.local
+
+# دیتابیس محلی (SQLite)
+*.db
+*.sqlite3
+
+# فایل‌های موقت
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# ========================
+# Node / React (Vite)
+# ========================
+
+# وابستگی‌های نصب‌شده
+frontend/node_modules/
+node_modules/
+
+# فایل‌های بیلد
+frontend/dist/
+dist/
+
+# فایل‌های لاگ
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# کش
+.cache/
+.parcel-cache/
+
+# فایل‌های IDE و ویرایشگر
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-*
+
+# فایل‌های خاص ویندوز
+Desktop.ini
+$RECYCLE.BIN/
+
+# ========================
+# عمومی
+# ========================
+
+# فایل‌های آپلود شده توسط کاربر (در صورت وجود)
+uploads/
+
+# فایل‌های پشتیبان
+*.bak
+*.backup
+*.old

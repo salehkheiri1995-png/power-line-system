@@ -1,0 +1,247 @@
+/* --- CSS Variables (Space Theme) --- */
+:root {
+  --bg-deep: #0a0b10;
+  --bg-card: rgba(255, 255, 255, 0.05);
+  --border-glow: rgba(0, 255, 255, 0.2);
+  --text-primary: #e0f0ff;
+  --text-secondary: #8892b0;
+  --accent-cyan: #00f0ff;
+  --accent-purple: #b366ff;
+  --accent-pink: #ff4d94;
+  --glass-bg: rgba(15, 20, 30, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --shadow-glow: 0 0 15px rgba(0, 240, 255, 0.3);
+  --radius-lg: 16px;
+  --transition-smooth: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Vazirmatn', sans-serif;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  direction: rtl;
+}
+
+/* --- Canvas Background (Stars/Nebula) --- */
+#space-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  opacity: 0.6;
+}
+
+/* --- Glass Morphism Card --- */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  transition: var(--transition-smooth);
+}
+.glass-card:hover {
+  border-color: var(--border-glow);
+  box-shadow: var(--shadow-glow), 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* --- Tabs --- */
+.space-tabs {
+  display: flex;
+  gap: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding-bottom: 0;
+  margin-bottom: 25px;
+}
+.space-tab {
+  background: transparent;
+  border: none;
+  padding: 12px 25px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: var(--transition-smooth);
+  letter-spacing: 0.5px;
+}
+.space-tab:hover {
+  color: #fff;
+}
+.space-tab.active {
+  color: var(--accent-cyan);
+  border-bottom-color: var(--accent-cyan);
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+}
+
+/* --- Upload Area --- */
+.upload-zone {
+  border: 2px dashed var(--border-glow);
+  border-radius: var(--radius-lg);
+  padding: 50px;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  background: var(--glass-bg);
+  backdrop-filter: blur(8px);
+}
+.upload-zone:hover {
+  border-color: var(--accent-cyan);
+  background: rgba(0, 240, 255, 0.05);
+  box-shadow: var(--shadow-glow);
+}
+.upload-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+}
+
+/* --- Table --- */
+.space-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.space-table th {
+  background: rgba(0, 240, 255, 0.08);
+  color: var(--accent-cyan);
+  padding: 14px 12px;
+  text-align: right;
+  font-weight: 500;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.space-table td {
+  padding: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  color: var(--text-secondary);
+}
+.space-table tr:hover td {
+  background: rgba(255,255,255,0.03);
+  color: #fff;
+}
+
+/* --- Buttons --- */
+.btn-glow {
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+  border: none;
+  color: #000;
+  font-weight: 600;
+  padding: 10px 24px;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
+}
+.btn-glow:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.7);
+}
+
+/* --- Skeleton Loader --- */
+.skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Chart titles */
+.chart-title {
+  font-size: 16px;
+  margin-bottom: 15px;
+  color: var(--accent-cyan);
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+}
+
+/* Stats cards */
+.stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.stat-value {
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+/* برای جداول داخل مدال */
+.space-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+.space-table th,
+.space-table td {
+  padding: 8px;
+  text-align: right;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  color: #e0f0ff;
+}
+.space-table th {
+  background: rgba(0, 240, 255, 0.08);
+  font-weight: 500;
+}
+/* حذف فاصله اضافی */
+body {
+  margin: 0;
+}
+
+/* اسپینر ساده */
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(0,240,255,0.2);
+  border-top-color: #00f0ff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 15px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+/* دکمه‌های شناور کنار صفحه */
+.sidebar-tab:hover {
+  background: rgba(0, 240, 255, 0.1) !important;
+  color: #fff !important;
+}
+
+/* اسکرول‌بار نوار کناری */
+.sidebar-panel::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar-panel::-webkit-scrollbar-thumb {
+  background: var(--accent-cyan);
+  border-radius: 4px;
+}
+/* اسکرول‌بار شیشه‌ای */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.05);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--accent-cyan);
+  border-radius: 3px;
+}
+.tower-marker {
+  background: transparent;
+  border: none;
+}
+.leaflet-popup-content {
+  font-family: Tahoma, sans-serif;
+}
