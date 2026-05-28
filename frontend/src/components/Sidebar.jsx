@@ -21,9 +21,10 @@ function Sidebar({ activeTab, onTabChange, role, onLogout }) {
 
   return (
     <>
+      {/* data-open attribute برای مدیریت موقعیت toggle از طریق CSS */}
       <button
         className="sb-toggle"
-        style={{ right: collapsed ? '18px' : '270px' }}
+        data-open={String(!collapsed)}
         onClick={() => setCollapsed(!collapsed)}
         aria-label={collapsed ? 'باز کردن منو' : 'بستن منو'}
         title={collapsed ? 'باز کردن منو' : 'بستن منو'}
