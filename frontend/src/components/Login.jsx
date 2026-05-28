@@ -33,50 +33,6 @@ function Login({ onLogin }) {
 
   return (
     <div className="login-wrapper">
-      <style>{`
-        .login-wrapper {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          min-height: 100vh;
-          padding: var(--space-4);
-        }
-        .login-card {
-          width: 100%;
-          max-width: 400px;
-          padding: var(--space-10) var(--space-8);
-          animation: scaleIn 0.3s ease;
-        }
-        .login-title {
-          text-align: center;
-          font-size: var(--text-2xl);
-          font-weight: 700;
-          background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          margin-bottom: var(--space-8);
-        }
-        .login-form {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-4);
-        }
-        .login-toggle {
-          background: none;
-          border: none;
-          color: var(--accent-cyan);
-          cursor: pointer;
-          font-family: inherit;
-          font-size: var(--text-sm);
-          text-decoration: underline;
-          transition: color var(--transition-fast);
-        }
-        .login-toggle:hover {
-          color: #fff;
-        }
-      `}</style>
-
       <div className="glass-card login-card">
         <h2 className="login-title">
           {isRegistering ? '📝 ثبت‌نام' : '⚡ ورود به سامانه'}
@@ -110,21 +66,18 @@ function Login({ onLogin }) {
             />
           </div>
 
-          {error && (
-            <div className="message error">{error}</div>
-          )}
+          {error && <div className="message error">{error}</div>}
 
           <button
             type="submit"
-            className="btn-glow"
-            style={{ width: '100%', marginTop: 'var(--space-2)' }}
+            className="btn-glow login-submit"
             disabled={loading}
           >
             {loading ? '⏳ ...' : isRegistering ? '✅ ثبت‌نام' : '🚀 ورود'}
           </button>
         </form>
 
-        <div style={{ textAlign: 'center', marginTop: 'var(--space-5)' }}>
+        <div className="login-switch-wrap">
           <button
             className="login-toggle"
             onClick={() => { setIsRegistering(!isRegistering); setError(''); }}

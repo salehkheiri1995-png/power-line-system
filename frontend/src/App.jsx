@@ -27,7 +27,6 @@ function App() {
   const [showAddModal, setShowAddModal]   = useState(false);
   const [analyticsFilters, setAnalyticsFilters] = useState({});
 
-  // ===================== ۱. بررسی توکن =====================
   useEffect(() => {
     const verifyToken = async () => {
       const token = localStorage.getItem('token');
@@ -51,7 +50,6 @@ function App() {
     verifyToken();
   }, []);
 
-  // ===================== ۲. خطای احراز هویت =====================
   useEffect(() => {
     const handleAuthError = () => {
       setIsLoggedIn(false);
@@ -62,7 +60,6 @@ function App() {
     return () => window.removeEventListener('auth-error', handleAuthError);
   }, []);
 
-  // ===================== ۳. بارگذاری داده‌ها =====================
   const loadInitialData = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -84,7 +81,6 @@ function App() {
     if (isLoggedIn) loadInitialData();
   }, [isLoggedIn, loadInitialData]);
 
-  // ===================== ۴. هندلرها =====================
   const handleUpload = async (file) => {
     setIsLoading(true);
     try {
@@ -99,7 +95,7 @@ function App() {
     }
   };
 
-  const handleLogin  = () => { setIsLoggedIn(true);  setAuthChecked(true); };
+  const handleLogin  = () => { setIsLoggedIn(true); setAuthChecked(true); };
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
@@ -113,7 +109,6 @@ function App() {
     ? Object.keys(records[0]).filter(k => k !== 'id')
     : [];
 
-  // ===================== ۵. پس‌زمینه ستاره‌ای =====================
   useEffect(() => {
     const canvas = document.getElementById('space-canvas');
     if (!canvas) return;
@@ -155,10 +150,9 @@ function App() {
     };
   }, []);
 
-  // ===================== ۶. رندر =====================
   if (!authChecked) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <div className="loading-center">
         <div className="spinner" />
       </div>
     );
@@ -167,7 +161,7 @@ function App() {
   if (!isLoggedIn) return <Login onLogin={handleLogin} />;
 
   return (
-    <div style={{ position: 'relative', minHeight: '100vh' }}>
+    <div className="app-root">
       <canvas id="space-canvas" />
 
       <Sidebar
@@ -177,11 +171,11 @@ function App() {
         onLogout={handleLogout}
       />
 
-      <main style={{ padding: 'var(--space-5) var(--space-10) var(--space-5) var(--space-5)', maxWidth: '1440px', margin: '0 auto' }}>
+      <main className="app-main">
         {!dataLoaded && !isLoading && <ExcelUploader onUpload={handleUpload} />}
 
         {isLoading && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+          <div className="app-loading-stacks">
             <div className="skeleton" style={{ height: '52px', width: '100%', borderRadius: 'var(--radius-md)' }} />
             <div className="skeleton" style={{ height: '320px', width: '100%', borderRadius: 'var(--radius-lg)' }} />
           </div>

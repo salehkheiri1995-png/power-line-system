@@ -13,34 +13,30 @@ import FilterPanel from './FilterPanel';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
 
-// رنگ‌های نئونی برای نمودارها
 const NEON_COLORS = [
-  '#00f0ff', // فیروزه‌ای نئون
-  '#b366ff', // بنفش
-  '#ff4d94', // صورتی
-  '#ffaa00', // نارنجی
-  '#00e676', // سبز نئون
-  '#ff4081', // سرخابی
-  '#69f0ae', // سبز روشن
-  '#40c4ff', // آبی آسمانی
+  '#00f0ff',
+  '#b366ff',
+  '#ff4d94',
+  '#ffaa00',
+  '#00e676',
+  '#ff4081',
+  '#69f0ae',
+  '#40c4ff',
 ];
 
 function Dashboard({ records, filterOptions }) {
   const [filtered, setFiltered] = useState(records);
 
-  // اعمال فیلترها (همان منطق قبلی)
   const handleFilter = (filters) => {
     let result = [...records];
-
-    if (filters.program_type) result = result.filter(r => r.program_type === filters.program_type);
-    if (filters.code) result = result.filter(r => r.code === filters.code);
-    if (filters.voltage_level) result = result.filter(r => r.voltage_level === filters.voltage_level);
-    if (filters.location) result = result.filter(r => r.location === filters.location);
-    if (filters.supervisor) result = result.filter(r => r.supervisor === filters.supervisor);
-    if (filters.line_names?.length) result = result.filter(r => filters.line_names.includes(r.line_name));
+    if (filters.program_type)         result = result.filter(r => r.program_type === filters.program_type);
+    if (filters.code)                 result = result.filter(r => r.code === filters.code);
+    if (filters.voltage_level)        result = result.filter(r => r.voltage_level === filters.voltage_level);
+    if (filters.location)             result = result.filter(r => r.location === filters.location);
+    if (filters.supervisor)           result = result.filter(r => r.supervisor === filters.supervisor);
+    if (filters.line_names?.length)   result = result.filter(r => filters.line_names.includes(r.line_name));
     if (filters.work_descriptions?.length) result = result.filter(r => filters.work_descriptions.includes(r.work_description));
 
-    // فیلتر تاریخ (شمسی)
     if (filters.dateFromYear || filters.dateFromMonth || filters.dateFromDay) {
       result = result.filter(r => {
         if (!r.execution_date) return false;
@@ -65,13 +61,11 @@ function Dashboard({ records, filterOptions }) {
         return true;
       });
     }
-
     setFiltered(result);
   };
 
   const handleClear = () => setFiltered(records);
 
-  // آماده‌سازی داده‌های نمودار دایره‌ای
   const pieData = (field) => {
     const counts = {};
     filtered.forEach(r => {
@@ -89,7 +83,6 @@ function Dashboard({ records, filterOptions }) {
     };
   };
 
-  // آماده‌سازی داده‌های نمودار میله‌ای
   const barData = (field) => {
     const counts = {};
     filtered.forEach(r => {
@@ -101,13 +94,12 @@ function Dashboard({ records, filterOptions }) {
       datasets: [{
         label: 'تعداد',
         data: Object.values(counts),
-        backgroundColor: '#00f0ff',
+        backgroundColor: 'var(--accent-cyan)',
         borderRadius: 5,
       }]
     };
   };
 
-  // تنظیمات مشترک نمودارها برای تم تیره
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -149,58 +141,46 @@ function Dashboard({ records, filterOptions }) {
         records={records}
       />
 
-      {/* شبکه نمودارها با CSS Grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-        gap: '20px',
-        marginTop: '20px'
-      }}>
-        {/* نمودار دایره‌ای: نوع برنامه */}
-        <div className="glass-card" style={{ padding: '20px', minHeight: '350px' }}>
+      <div className="dashboard-charts-grid">
+        <div className="glass-card dashboard-chart-card">
           <h4 className="chart-title">🌌 توزیع نوع برنامه</h4>
-          <div style={{ height: '280px' }}>
+          <div className="dashboard-chart-inner">
             <Pie data={pieData('program_type')} options={chartOptions} />
           </div>
         </div>
 
-        {/* نمودار دایره‌ای: نام خطوط */}
-        <div className="glass-card" style={{ padding: '20px', minHeight: '350px' }}>
+        <div className="glass-card dashboard-chart-card">
           <h4 className="chart-title">⚡ توزیع خطوط</h4>
-          <div style={{ height: '280px' }}>
+          <div className="dashboard-chart-inner">
             <Pie data={pieData('line_name')} options={chartOptions} />
           </div>
         </div>
 
-        {/* نمودار دایره‌ای: موقعیت‌ها */}
-        <div className="glass-card" style={{ padding: '20px', minHeight: '350px' }}>
+        <div className="glass-card dashboard-chart-card">
           <h4 className="chart-title">📍 توزیع موقعیت‌ها</h4>
-          <div style={{ height: '280px' }}>
+          <div className="dashboard-chart-inner">
             <Pie data={pieData('location')} options={chartOptions} />
           </div>
         </div>
 
-        {/* نمودار میله‌ای: تعداد اکیپ */}
-        <div className="glass-card" style={{ padding: '20px', minHeight: '350px' }}>
+        <div className="glass-card dashboard-chart-card">
           <h4 className="chart-title">👥 توزیع تعداد اکیپ</h4>
-          <div style={{ height: '280px' }}>
+          <div className="dashboard-chart-inner">
             <Bar data={barData('team_count')} options={chartOptions} />
           </div>
         </div>
 
-        {/* نمودار میله‌ای: تعداد نفرات */}
-        <div className="glass-card" style={{ padding: '20px', minHeight: '350px' }}>
+        <div className="glass-card dashboard-chart-card">
           <h4 className="chart-title">👤 توزیع تعداد نفرات</h4>
-          <div style={{ height: '280px' }}>
+          <div className="dashboard-chart-inner">
             <Bar data={barData('personnel_count')} options={chartOptions} />
           </div>
         </div>
       </div>
 
-      {/* در صورت خالی بودن داده‌ها */}
       {filtered.length === 0 && (
-        <div className="glass-card" style={{ padding: '30px', textAlign: 'center', marginTop: '20px' }}>
-          <span style={{ fontSize: '1.2rem', color: 'var(--text-secondary)' }}>
+        <div className="glass-card dashboard-empty">
+          <span className="dashboard-empty-msg">
             🪐 داده‌ای با فیلترهای انتخاب‌شده یافت نشد
           </span>
         </div>
