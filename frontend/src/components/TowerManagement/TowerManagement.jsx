@@ -201,7 +201,7 @@ function TowerManagement() {
           <MapContainer
             center={[37.5, 47.0]}
             zoom={8}
-            style={{ width: '100%', height: '100%' }}
+            className="tower-map-fill"
             scrollWheelZoom={true}
           >
             <TileLayer
@@ -221,7 +221,7 @@ function TowerManagement() {
                   eventHandlers={{ click: () => handleSelectTower(tower.id) }}
                 >
                   <Popup>
-                    <div style={{ direction: 'rtl', fontFamily: 'Vazirmatn, Tahoma', fontSize: 13 }}>
+                    <div className="tower-popup-content">
                       <strong>🗼 دکل {tower.number}</strong><br />
                       <span>خط: {lines.find(l => l.id === tower.line_id)?.name}</span><br />
                       <span>آخرین تعمیر: {tower.last_maintenance || '—'}</span><br />

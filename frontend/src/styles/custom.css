@@ -226,8 +226,10 @@ input, select, textarea {
 .btn-glow.btn-slate  { background: #475569; box-shadow: none; }
 .btn-glow.btn-sm     { padding: 4px 10px; font-size: var(--text-xs); }
 
-/* فاصله بین دکمه‌های action در جدول */
-.btn-action-gap { margin-right: var(--space-2); }
+/* فاصله بین دکمه‌های جدول */
+.btn-action-gap {
+  margin-right: var(--space-2);
+}
 
 /* دکمه خطر - قرمز */
 .btn-danger {
@@ -851,13 +853,12 @@ select.input-field {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all var(--transition-base);
+  transition: right var(--transition-smooth), box-shadow var(--transition-base), border-color var(--transition-base);
   box-shadow: var(--shadow-cyan);
 }
 
-/* حرکت sidebar toggle براساس data-open attribute */
 .sb-toggle[data-open="true"] {
-  right: calc(var(--sidebar-width) + 10px);
+  right: 270px;
 }
 
 .sb-toggle[data-open="false"] {
@@ -1163,6 +1164,12 @@ select.input-field {
   position: relative;
 }
 
+/* پر کردن کانتینر نقشه توسط Leaflet */
+.tower-map-fill {
+  width: 100%;
+  height: 100%;
+}
+
 .tower-map-hint {
   position: absolute;
   bottom: 10px;
@@ -1226,10 +1233,6 @@ select.input-field {
 /* ===================================================
    User Management
    =================================================== */
-.user-mgmt-card {
-  padding: var(--space-6);
-}
-
 .user-mgmt-header {
   display: flex;
   justify-content: space-between;
@@ -1242,6 +1245,10 @@ select.input-field {
   font-size: var(--text-xl);
   font-weight: 600;
   margin: 0;
+}
+
+.user-mgmt-card {
+  padding: var(--space-6);
 }
 
 .user-mgmt-table-wrap {
@@ -1341,8 +1348,7 @@ select.input-field {
 }
 
 /* ===================================================
-   TowerDetail — Design System Classes
-   (جایگزین تمام inline styles)
+   TowerDetail — یکدست‌سازی
    =================================================== */
 .tower-detail-empty {
   color: var(--text-secondary);
@@ -1443,10 +1449,12 @@ select.input-field {
   margin-top: var(--space-3);
 }
 
-/* پاپ‌آپ دکل در Leaflet Map */
+/* ===================================================
+   Leaflet Popup — یکدست‌سازی
+   =================================================== */
 .tower-popup-content {
   direction: rtl;
   font-family: 'Vazirmatn', Tahoma, sans-serif;
-  font-size: var(--text-sm);
+  font-size: 13px;
   color: #1a1a2e;
 }

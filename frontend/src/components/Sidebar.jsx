@@ -21,7 +21,6 @@ function Sidebar({ activeTab, onTabChange, role, onLogout }) {
 
   return (
     <>
-      {/* data-open attribute برای مدیریت موقعیت toggle از طریق CSS */}
       <button
         className="sb-toggle"
         data-open={String(!collapsed)}
