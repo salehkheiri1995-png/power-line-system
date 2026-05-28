@@ -74,7 +74,7 @@ function UserManagement() {
   };
 
   return (
-    <div className="glass-card" style={{ padding: 'var(--space-6)' }}>
+    <div className="glass-card user-mgmt-card">
       <div className="user-mgmt-header">
         <h3 className="user-mgmt-title">👥 مدیریت کاربران</h3>
         <button className="btn-glow" onClick={openCreate}>
@@ -104,8 +104,7 @@ function UserManagement() {
                     onClick={() => openEdit(u)}
                   >✏️</button>
                   <button
-                    className="btn-glow btn-sm btn-red"
-                    style={{ marginRight: 'var(--space-2)' }}
+                    className="btn-glow btn-sm btn-red btn-action-gap"
                     onClick={() => handleDelete(u.id)}
                   >🗑️</button>
                 </td>
