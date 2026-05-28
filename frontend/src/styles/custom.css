@@ -226,6 +226,9 @@ input, select, textarea {
 .btn-glow.btn-slate  { background: #475569; box-shadow: none; }
 .btn-glow.btn-sm     { padding: 4px 10px; font-size: var(--text-xs); }
 
+/* فاصله بین دکمه‌های action در جدول */
+.btn-action-gap { margin-right: var(--space-2); }
+
 /* دکمه خطر - قرمز */
 .btn-danger {
   background: rgba(255, 77, 77, 0.12);
@@ -852,6 +855,15 @@ select.input-field {
   box-shadow: var(--shadow-cyan);
 }
 
+/* حرکت sidebar toggle براساس data-open attribute */
+.sb-toggle[data-open="true"] {
+  right: calc(var(--sidebar-width) + 10px);
+}
+
+.sb-toggle[data-open="false"] {
+  right: 18px;
+}
+
 .sb-toggle:hover {
   box-shadow: var(--shadow-cyan-strong);
   border-color: var(--accent-cyan);
@@ -1214,6 +1226,10 @@ select.input-field {
 /* ===================================================
    User Management
    =================================================== */
+.user-mgmt-card {
+  padding: var(--space-6);
+}
+
 .user-mgmt-header {
   display: flex;
   justify-content: space-between;
@@ -1322,4 +1338,115 @@ select.input-field {
 .login-submit {
   width: 100%;
   margin-top: var(--space-2);
+}
+
+/* ===================================================
+   TowerDetail — Design System Classes
+   (جایگزین تمام inline styles)
+   =================================================== */
+.tower-detail-empty {
+  color: var(--text-secondary);
+  text-align: center;
+  padding: var(--space-8);
+}
+
+.tower-detail-title {
+  color: var(--accent-blue);
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-lg);
+}
+
+.tower-detail-line-title {
+  color: var(--accent-blue);
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-lg);
+}
+
+.tower-detail-body {
+  color: var(--text-light);
+  font-size: var(--text-sm);
+}
+
+.tower-info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--border-default);
+  font-size: var(--text-sm);
+}
+
+.tower-info-row span:last-child {
+  font-weight: 600;
+}
+
+.tower-duplicate-warning {
+  margin: var(--space-3) 0;
+  padding: var(--space-2);
+  background: rgba(255, 77, 77, 0.1);
+  border: 1px solid rgba(255, 77, 77, 0.25);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  color: var(--accent-red);
+}
+
+.tower-open-plans {
+  margin-top: var(--space-4);
+}
+
+.tower-open-plans h5 {
+  color: var(--accent-purple);
+  margin-bottom: var(--space-2);
+}
+
+.tower-plan-card {
+  background: rgba(179, 102, 255, 0.08);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-1);
+  border-right: 3px solid var(--accent-purple);
+  font-size: var(--text-xs);
+}
+
+.tower-history-title {
+  margin-top: var(--space-4);
+  color: var(--accent-green);
+}
+
+.tower-history-card {
+  background: rgba(255, 255, 255, 0.04);
+  padding: var(--space-2);
+  margin: var(--space-1) 0;
+  border-radius: var(--radius-sm);
+  border-right: 3px solid var(--accent-green);
+  font-size: var(--text-sm);
+}
+
+.tower-history-card small {
+  color: var(--text-secondary);
+  display: block;
+  margin-top: 2px;
+}
+
+.tower-history-planned-ref {
+  margin-top: var(--space-1);
+  color: var(--accent-purple);
+  font-size: var(--text-xs);
+}
+
+.tower-history-id {
+  color: var(--text-faint);
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+.tower-add-btn {
+  margin-top: var(--space-3);
+}
+
+/* پاپ‌آپ دکل در Leaflet Map */
+.tower-popup-content {
+  direction: rtl;
+  font-family: 'Vazirmatn', Tahoma, sans-serif;
+  font-size: var(--text-sm);
+  color: #1a1a2e;
 }
