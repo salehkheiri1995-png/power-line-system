@@ -347,7 +347,7 @@ def delete_planned_task(
     return {"ok": True}
 
 
-# ========== Open Plans for Line (اصلاح نهایی) ==========
+# ========== Open Plans for Line ==========
 @router.get("/planned-tasks/line/{line_id}/open")
 def get_open_plans_for_line(
     line_id: str,
@@ -447,12 +447,14 @@ def import_from_records(
     return {"message": f"{added} رکورد تعمیر اضافه شد"}
 
 
-# ========== Complete Plans (اصلاح شده: همه کاربران لاگین‌شده مجاز) ==========
+# ========== Complete Plans ==========
+# ✅ تغییر اساسی: get_current_admin_user حذف شد و جای آن get_current_user گذاشته شد
+# این باعث می‌شد کاربران عادی (user) هم بتوانند اطلاعات ثبت کنند
 @router.post("/complete-plans")
 def complete_plans(
     plan_ids: List[str],
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),   # ✅ تغییر از admin به user عادی
+    current_user: User = Depends(get_current_user),  # <-- اصلاح شد
 ):
     for pid in plan_ids:
         task = db.query(PlannedTask).filter(PlannedTask.id == pid).first()
