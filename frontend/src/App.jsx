@@ -63,15 +63,18 @@ function App() {
   const loadInitialData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const qsRes  = await fetch('/api/quick-stats').then(r => r.json());
+      const qsRes  = await api.get('/quick-stats').then(r => r.data);
       setQuickStats(qsRes);
       const recRes = await getRecords(0, 10000);
       setRecords(recRes.data);
-      setDataLoaded(recRes.data.length > 0);
+      // dataLoaded را true می‌گذاریم حتی اگر هیچ رکوردی نباشد (بعد از اولین لود)
+      setDataLoaded(true);
       const optRes = await getFilterOptions();
       setFilterOptions(optRes.data);
     } catch (err) {
       console.error('خطا در بارگذاری:', err);
+      // حتی در صورت خطا، dataLoaded را true کن تا فرم‌ها نمایش داده شوند
+      setDataLoaded(true);
     } finally {
       setIsLoading(false);
     }
@@ -160,6 +163,10 @@ function App() {
 
   if (!isLoggedIn) return <Login onLogin={handleLogin} />;
 
+  // تب‌هایی که نیازی به dataLoaded ندارند و همیشه باید نمایش داده شوند
+  const alwaysVisibleTabs = ['add', 'users', 'towers'];
+  const showAlwaysVisible = alwaysVisibleTabs.includes(activeTab);
+
   return (
     <div className="app-root">
       <canvas id="space-canvas" />
@@ -172,7 +179,10 @@ function App() {
       />
 
       <main className="app-main">
-        {!dataLoaded && !isLoading && <ExcelUploader onUpload={handleUpload} />}
+        {/* نمایش آپلودر فقط اگر داده‌ای نیست و روی تب داده‌محور هستیم */}
+        {!dataLoaded && !isLoading && !showAlwaysVisible && (
+          <ExcelUploader onUpload={handleUpload} />
+        )}
 
         {isLoading && (
           <div className="app-loading-stacks">
@@ -181,13 +191,21 @@ function App() {
           </div>
         )}
 
-        {dataLoaded && (
+        {/* تب‌هایی که همیشه نمایش داده می‌شوند صرف نظر از dataLoaded */}
+        {!isLoading && (
           <Suspense fallback={<div className="skeleton" style={{ height: '400px', borderRadius: 'var(--radius-lg)' }} />}>
-            {activeTab === 'add'       && <AddRecordPanel onSuccess={loadInitialData} />}
+            {activeTab === 'add'   && <AddRecordPanel onSuccess={loadInitialData} />}
+            {activeTab === 'towers' && <TowerManagement />}
+            {activeTab === 'users'  && <UserManagement />}
+          </Suspense>
+        )}
+
+        {/* تب‌هایی که به داده نیاز دارند */}
+        {dataLoaded && !isLoading && (
+          <Suspense fallback={<div className="skeleton" style={{ height: '400px', borderRadius: 'var(--radius-lg)' }} />}>
             {activeTab === 'dashboard' && <Dashboard records={records} filterOptions={filterOptions} />}
             {activeTab === 'data'      && <DataTable records={records} onDataChange={loadInitialData} />}
             {activeTab === 'report'    && <Report records={records} />}
-            {activeTab === 'towers'    && <TowerManagement />}
             {activeTab === 'analytics' && (
               <AnalyticsDashboard
                 records={records}
@@ -196,7 +214,6 @@ function App() {
                 onAnalyticsFilterChange={setAnalyticsFilters}
               />
             )}
-            {activeTab === 'users' && <UserManagement />}
           </Suspense>
         )}
       </main>
