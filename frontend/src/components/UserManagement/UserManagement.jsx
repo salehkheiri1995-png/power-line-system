@@ -1,65 +1,133 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { getUsers, createUserAdmin, updateUserAdmin, deleteUserAdmin } from '../../api';
 
 const PERMISSION_OPTIONS = [
-  { key: 'dashboard', label: '📊 داشبورد' },
-  { key: 'data',      label: '📋 کاوش داده‌ها' },
-  { key: 'add',       label: '➕ ورود اطلاعات' },
-  { key: 'analytics', label: '📈 تحلیل' },
-  { key: 'report',    label: '📄 گزارش' },
-  { key: 'towers',    label: '🗼 مدیریت خطوط' },
-  { key: 'users',     label: '👥 مدیریت کاربران' },
+  { key: 'dashboard', label: '📊 داشبورد',       desc: 'مشاهده داشبورد اصلی' },
+  { key: 'data',      label: '📋 کاوش داده',      desc: 'جستجو و فیلتر رکوردها' },
+  { key: 'add',       label: '➕ ورود اطلاعات',   desc: 'ثبت رکورد جدید' },
+  { key: 'analytics', label: '📈 تحلیل',          desc: 'نمودارها و گزارش آماری' },
+  { key: 'report',    label: '📄 گزارش',          desc: 'خروجی و چاپ گزارش' },
+  { key: 'towers',    label: '🗼 مدیریت خطوط',    desc: 'دکل‌ها و برنامه‌ریزی' },
+  { key: 'users',     label: '👥 مدیریت کاربران', desc: 'افزودن و ویرایش کاربر' },
 ];
 
-const ROLE_MAP = { admin: '👑 ادمین', manager: '🔑 مدیر', user: '👤 کاربر' };
-const ROLE_COLOR = { admin: '#f59e0b', manager: '#818cf8', user: '#38bdf8' };
+const ROLE_META = {
+  admin:   { label: '👑 ادمین',  color: '#f59e0b', bg: 'rgba(245,158,11,0.15)',  border: 'rgba(245,158,11,0.4)'  },
+  manager: { label: '🔑 مدیر',   color: '#818cf8', bg: 'rgba(129,140,248,0.15)', border: 'rgba(129,140,248,0.4)' },
+  user:    { label: '👤 کاربر',  color: '#38bdf8', bg: 'rgba(56,189,248,0.15)',  border: 'rgba(56,189,248,0.4)'  },
+};
 
-function UserManagement() {
-  const [users, setUsers]             = useState([]);
-  const [loading, setLoading]         = useState(true);
-  const [saving, setSaving]           = useState(false);
-  const [showModal, setShowModal]     = useState(false);
+const PRESET_PERMISSIONS = {
+  admin:   PERMISSION_OPTIONS.map(p => p.key).join(','),
+  manager: 'dashboard,data,add,analytics,report,towers',
+  user:    'dashboard,data,add',
+  viewer:  'dashboard,data',
+  none:    '',
+};
+
+const inputSt = {
+  width: '100%', padding: '10px 12px',
+  background: 'rgba(5,12,22,0.9)',
+  border: '1px solid rgba(0,240,255,0.25)',
+  borderRadius: 8, color: '#e0f0ff',
+  fontSize: '0.9rem', outline: 'none',
+  boxSizing: 'border-box',
+  transition: 'border-color .2s',
+};
+
+const miniBtn = {
+  background: 'rgba(56,189,248,0.1)',
+  border: '1px solid rgba(56,189,248,0.25)',
+  color: '#38bdf8', padding: '3px 10px',
+  borderRadius: 6, fontSize: '0.74rem', cursor: 'pointer',
+};
+
+function Badge({ children, color, bg, border }) {
+  return (
+    <span style={{
+      background: bg, color, border: `1px solid ${border}`,
+      padding: '2px 10px', borderRadius: 20, fontSize: '0.76rem', fontWeight: 600,
+      whiteSpace: 'nowrap',
+    }}>{children}</span>
+  );
+}
+
+function Toast({ msg, type }) {
+  const colors = { success: '#10b981', error: '#ef4444', info: '#38bdf8', warn: '#f59e0b' };
+  return (
+    <div style={{
+      position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)',
+      background: colors[type] || colors.info,
+      color: '#fff', padding: '11px 28px', borderRadius: 12,
+      fontWeight: 700, fontSize: '0.95rem', zIndex: 9999,
+      boxShadow: '0 4px 28px rgba(0,0,0,0.5)',
+      animation: 'slideDown .25s ease', direction: 'rtl',
+    }}>
+      {msg}
+    </div>
+  );
+}
+
+export default function UserManagement() {
+  const [users, setUsers]           = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [saving, setSaving]         = useState(false);
+  const [showModal, setShowModal]   = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [deleteConfirm, setDeleteConfirm] = useState(null); // id of user to delete
-  const [toast, setToast]             = useState(null);
-  const [searchTerm, setSearchTerm]   = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [toast, setToast]           = useState(null);
+  const [search, setSearch]         = useState('');
+  const [filterRole, setFilterRole] = useState('all');
   const [form, setForm] = useState({
-    username: '',
-    password: '',
-    role: 'user',
-    permissions: 'dashboard,data',
-    is_active: true,
+    username: '', password: '', role: 'user', permissions: 'dashboard,data,add',
   });
 
-  const showToast = (msg, type = 'success') => {
+  const showToast = useCallback((msg, type = 'success') => {
     setToast({ msg, type });
-    setTimeout(() => setToast(null), 3500);
-  };
+    setTimeout(() => setToast(null), 3000);
+  }, []);
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     setLoading(true);
-    try {
-      const res = await getUsers();
-      setUsers(res.data);
-    } catch {
-      showToast('خطا در بارگذاری کاربران', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
+    try { const r = await getUsers(); setUsers(r.data); }
+    catch { showToast('خطا در بارگذاری کاربران', 'error'); }
+    finally { setLoading(false); }
+  }, [showToast]);
 
-  useEffect(() => { loadUsers(); }, []);
+  useEffect(() => { loadUsers(); }, [loadUsers]);
 
+  // ---- modal helpers ----
   const openCreate = () => {
     setEditingUser(null);
-    setForm({ username: '', password: '', role: 'user', permissions: 'dashboard,data', is_active: true });
+    setForm({ username: '', password: '', role: 'user', permissions: 'dashboard,data,add' });
+    setShowModal(true);
+  };
+  const openEdit = (u) => {
+    setEditingUser(u);
+    setForm({ username: u.username, password: '', role: u.role, permissions: u.permissions || '' });
     setShowModal(true);
   };
 
-  const openEdit = (u) => {
-    setEditingUser(u);
-    setForm({ username: u.username, password: '', role: u.role, permissions: u.permissions || '', is_active: u.is_active });
-    setShowModal(true);
+  // ---- quick inline toggle role ----
+  const quickToggleRole = async (u, newRole) => {
+    try {
+      await updateUserAdmin(u.id, { role: newRole });
+      showToast(`نقش ${u.username} به «${ROLE_META[newRole]?.label}» تغییر یافت`);
+      loadUsers();
+    } catch { showToast('خطا در تغییر نقش', 'error'); }
+  };
+
+  // ---- quick inline perm toggle (single) ----
+  const quickTogglePerm = async (u, permKey) => {
+    const perms = (u.permissions || '').split(',').filter(Boolean);
+    const newPerms = perms.includes(permKey)
+      ? perms.filter(p => p !== permKey)
+      : [...perms, permKey];
+    try {
+      await updateUserAdmin(u.id, { permissions: newPerms.join(',') });
+      showToast('دسترسی بروزرسانی شد');
+      loadUsers();
+    } catch { showToast('خطا در تغییر دسترسی', 'error'); }
   };
 
   const handleSave = async () => {
@@ -71,363 +139,333 @@ function UserManagement() {
         const payload = { username: form.username, role: form.role, permissions: form.permissions };
         if (form.password.trim()) payload.password = form.password;
         await updateUserAdmin(editingUser.id, payload);
-        showToast('کاربر با موفقیت ویرایش شد');
+        showToast('کاربر با موفقیت ویرایش شد ✅');
       } else {
-        await createUserAdmin({
-          username: form.username,
-          password: form.password,
-          role: form.role,
-          permissions: form.permissions,
-        });
-        showToast('کاربر جدید ساخته شد');
+        await createUserAdmin({ username: form.username, password: form.password, role: form.role, permissions: form.permissions });
+        showToast('کاربر جدید ساخته شد 🎉');
       }
       setShowModal(false);
-      setEditingUser(null);
       loadUsers();
     } catch (err) {
-      const detail = err?.response?.data?.detail || 'خطا در ذخیره‌سازی';
-      showToast(detail, 'error');
-    } finally {
-      setSaving(false);
-    }
+      showToast(err?.response?.data?.detail || 'خطا در ذخیره‌سازی', 'error');
+    } finally { setSaving(false); }
   };
-
-  const confirmDelete = (id) => setDeleteConfirm(id);
 
   const handleDelete = async () => {
     try {
       await deleteUserAdmin(deleteConfirm);
-      showToast('کاربر حذف شد');
+      showToast('کاربر حذف شد 🗑️');
       setDeleteConfirm(null);
       loadUsers();
-    } catch {
-      showToast('خطا در حذف کاربر', 'error');
-      setDeleteConfirm(null);
-    }
+    } catch { showToast('خطا در حذف کاربر', 'error'); setDeleteConfirm(null); }
   };
 
   const togglePerm = (key) => {
     setForm(prev => {
-      const perms = prev.permissions.split(',').filter(Boolean);
-      if (perms.includes(key)) return { ...prev, permissions: perms.filter(p => p !== key).join(',') };
-      return { ...prev, permissions: [...perms, key].join(',') };
+      const arr = prev.permissions.split(',').filter(Boolean);
+      return { ...prev, permissions: arr.includes(key) ? arr.filter(p => p !== key).join(',') : [...arr, key].join(',') };
     });
   };
 
-  const setAllPerms = () => setForm(prev => ({ ...prev, permissions: PERMISSION_OPTIONS.map(p => p.key).join(',') }));
-  const clearAllPerms = () => setForm(prev => ({ ...prev, permissions: '' }));
+  const applyPreset = (preset) => setForm(prev => ({ ...prev, permissions: PRESET_PERMISSIONS[preset] || '' }));
 
-  const filteredUsers = users.filter(u =>
-    u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.role.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // ---- filter ----
+  const filtered = users.filter(u => {
+    const matchSearch = u.username.toLowerCase().includes(search.toLowerCase());
+    const matchRole   = filterRole === 'all' || u.role === filterRole;
+    return matchSearch && matchRole;
+  });
+
+  // ---- stats ----
+  const stats = [
+    { label: 'همه',          val: users.length,                            color: '#38bdf8', role: 'all'     },
+    { label: 'ادمین',        val: users.filter(u=>u.role==='admin').length,   color: '#f59e0b', role: 'admin'   },
+    { label: 'مدیر',         val: users.filter(u=>u.role==='manager').length, color: '#818cf8', role: 'manager' },
+    { label: 'کاربر عادی',  val: users.filter(u=>u.role==='user').length,    color: '#34d399', role: 'user'    },
+  ];
 
   return (
-    <div style={{ padding: '0 4px' }}>
-      {/* Toast notification */}
-      {toast && (
-        <div style={{
-          position: 'fixed', top: 24, left: '50%', transform: 'translateX(-50%)',
-          background: toast.type === 'success' ? 'rgba(16,185,129,0.95)' : 'rgba(239,68,68,0.95)',
-          color: '#fff', padding: '12px 28px', borderRadius: 12,
-          fontWeight: 700, fontSize: '1rem', zIndex: 9999,
-          boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
-          animation: 'fadeIn .2s ease'
-        }}>
-          {toast.msg}
-        </div>
-      )}
+    <div style={{ padding: '0 4px', direction: 'rtl' }}>
 
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+      {toast && <Toast msg={toast.msg} type={toast.type} />}
+
+      {/* ===== Header ===== */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h2 style={{ color: 'var(--accent-cyan)', margin: 0, fontSize: '1.4rem' }}>👥 مدیریت کاربران</h2>
-          <p style={{ color: '#94a3b8', margin: '4px 0 0', fontSize: '0.88rem' }}>
-            {users.length} کاربر ثبت‌شده
-          </p>
+          <p style={{ color: '#64748b', margin: '3px 0 0', fontSize: '0.84rem' }}>مدیریت نقش، دسترسی و اطلاعات کاربران سیستم</p>
         </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <input
-            type="text"
-            placeholder="🔍 جستجوی نام کاربری یا نقش..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            style={{
-              background: 'rgba(10,15,25,0.8)', border: '1px solid rgba(0,240,255,0.3)',
-              borderRadius: 8, color: '#e0f0ff', padding: '8px 14px',
-              fontSize: '0.88rem', outline: 'none', width: 240,
-            }}
-          />
-          <button className="btn-glow" onClick={openCreate} style={{ padding: '8px 20px' }}>
-            ➕ کاربر جدید
-          </button>
-        </div>
+        <button className="btn-glow" onClick={openCreate} style={{ padding: '9px 22px', fontWeight: 700 }}>
+          ➕ کاربر جدید
+        </button>
       </div>
 
-      {/* Stats row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 24 }}>
-        {[{label:'همه کاربران', val: users.length, color:'#38bdf8'},
-          {label:'ادمین‌ها', val: users.filter(u=>u.role==='admin').length, color:'#f59e0b'},
-          {label:'مدیران', val: users.filter(u=>u.role==='manager').length, color:'#818cf8'},
-          {label:'کاربران عادی', val: users.filter(u=>u.role==='user').length, color:'#34d399'},
-        ].map(s => (
-          <div key={s.label} className="glass-card" style={{ padding: '14px 18px', borderTop: `3px solid ${s.color}` }}>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: s.color }}>{s.val}</div>
-            <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: 2 }}>{s.label}</div>
+      {/* ===== Stats Cards (کلیک‌پذیر برای فیلتر) ===== */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 20 }}>
+        {stats.map(s => (
+          <div
+            key={s.role}
+            className="glass-card"
+            onClick={() => setFilterRole(s.role)}
+            style={{
+              padding: '14px 16px', cursor: 'pointer', transition: 'all .18s',
+              borderTop: `3px solid ${s.color}`,
+              outline: filterRole === s.role ? `2px solid ${s.color}` : '2px solid transparent',
+              outlineOffset: 2,
+            }}
+          >
+            <div style={{ fontSize: '1.7rem', fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.val}</div>
+            <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: 4 }}>{s.label}</div>
           </div>
         ))}
       </div>
 
-      {/* Table */}
+      {/* ===== Search ===== */}
+      <div style={{ marginBottom: 16 }}>
+        <input
+          type="text"
+          placeholder="🔍 جستجوی نام کاربری..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ ...inputSt, maxWidth: 320, display: 'block' }}
+        />
+      </div>
+
+      {/* ===== Table ===== */}
       <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
         {loading ? (
-          <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>⏳ در حال بارگذاری...</div>
-        ) : filteredUsers.length === 0 ? (
-          <div style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>👤</div>
-            {searchTerm ? 'کاربری با این مشخصات یافت نشد' : 'هنوز کاربری ثبت نشده'}
+          <div style={{ padding: 48, textAlign: 'center', color: '#64748b' }}>⏳ در حال بارگذاری...</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ padding: 48, textAlign: 'center', color: '#475569' }}>
+            <div style={{ fontSize: '3rem', marginBottom: 10 }}>🔍</div>
+            کاربری یافت نشد
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', direction: 'rtl' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ background: 'rgba(0,240,255,0.07)', borderBottom: '1px solid rgba(0,240,255,0.15)' }}>
-                  {['#','نام کاربری','نقش','دسترسی‌ها','وضعیت','عملیات'].map(h => (
-                    <th key={h} style={{ padding: '12px 16px', textAlign: 'right', color: '#7dd3fc', fontWeight: 600, fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{h}</th>
+                <tr style={{ background: 'rgba(0,240,255,0.06)', borderBottom: '1px solid rgba(0,240,255,0.12)' }}>
+                  {['#', 'نام کاربری', 'نقش سریع', 'دسترسی‌های سریع', 'عملیات'].map(h => (
+                    <th key={h} style={{ padding: '11px 14px', textAlign: 'right', color: '#7dd3fc', fontWeight: 600, fontSize: '0.82rem', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filteredUsers.map((u, idx) => (
-                  <tr key={u.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background .15s' }}
-                    onMouseEnter={e => e.currentTarget.style.background='rgba(0,240,255,0.04)'}
-                    onMouseLeave={e => e.currentTarget.style.background='transparent'}
-                  >
-                    <td style={{ padding: '12px 16px', color: '#475569', fontSize: '0.82rem' }}>{idx+1}</td>
-                    <td style={{ padding: '12px 16px', fontWeight: 600, color: '#e2e8f0' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{
-                          width: 32, height: 32, borderRadius: '50%',
-                          background: `${ROLE_COLOR[u.role] || '#38bdf8'}22`,
-                          border: `2px solid ${ROLE_COLOR[u.role] || '#38bdf8'}55`,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: '1rem', flexShrink: 0
-                        }}>
-                          {u.role === 'admin' ? '👑' : u.role === 'manager' ? '🔑' : '👤'}
-                        </span>
-                        {u.username}
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <span style={{
-                        background: `${ROLE_COLOR[u.role] || '#38bdf8'}22`,
-                        color: ROLE_COLOR[u.role] || '#38bdf8',
-                        border: `1px solid ${ROLE_COLOR[u.role] || '#38bdf8'}44`,
-                        padding: '3px 10px', borderRadius: 20, fontSize: '0.78rem', fontWeight: 600
-                      }}>
-                        {ROLE_MAP[u.role] || u.role}
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px 16px', maxWidth: 260 }}>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                        {(u.permissions || '').split(',').filter(Boolean).map(p => {
-                          const opt = PERMISSION_OPTIONS.find(o => o.key === p);
-                          return (
-                            <span key={p} style={{
-                              background: 'rgba(56,189,248,0.12)', color: '#7dd3fc',
-                              border: '1px solid rgba(56,189,248,0.25)',
-                              padding: '2px 8px', borderRadius: 12, fontSize: '0.73rem'
-                            }}>
-                              {opt ? opt.label : p}
-                            </span>
-                          );
-                        })}
-                        {!(u.permissions || '') && <span style={{ color: '#475569', fontSize: '0.8rem' }}>بدون دسترسی</span>}
-                      </div>
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <span style={{
-                        background: u.is_active ? 'rgba(52,211,153,0.15)' : 'rgba(239,68,68,0.12)',
-                        color: u.is_active ? '#34d399' : '#f87171',
-                        border: `1px solid ${u.is_active ? 'rgba(52,211,153,0.3)' : 'rgba(239,68,68,0.25)'}`,
-                        padding: '3px 10px', borderRadius: 20, fontSize: '0.78rem', fontWeight: 600
-                      }}>
-                        {u.is_active ? '✅ فعال' : '⛔ غیرفعال'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button
-                          className="btn-glow btn-sm"
-                          style={{ padding: '5px 12px', fontSize: '0.8rem' }}
-                          onClick={() => openEdit(u)}
-                          title="ویرایش"
-                        >✏️ ویرایش</button>
-                        <button
-                          className="btn-glow btn-sm"
-                          style={{ padding: '5px 12px', fontSize: '0.8rem', background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.4)', color: '#f87171' }}
-                          onClick={() => confirmDelete(u.id)}
-                          title="حذف"
-                        >🗑️ حذف</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {filtered.map((u, idx) => {
+                  const rm = ROLE_META[u.role] || ROLE_META.user;
+                  const userPerms = (u.permissions || '').split(',').filter(Boolean);
+                  return (
+                    <tr key={u.id}
+                      style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', transition: 'background .15s' }}
+                      onMouseEnter={e => e.currentTarget.style.background='rgba(0,240,255,0.03)'}
+                      onMouseLeave={e => e.currentTarget.style.background='transparent'}
+                    >
+                      {/* شماره */}
+                      <td style={{ padding: '10px 14px', color: '#475569', fontSize: '0.8rem', width: 36 }}>{idx + 1}</td>
+
+                      {/* نام کاربری */}
+                      <td style={{ padding: '10px 14px', minWidth: 140 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{
+                            width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+                            background: rm.bg, border: `2px solid ${rm.border}`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem'
+                          }}>
+                            {u.role === 'admin' ? '👑' : u.role === 'manager' ? '🔑' : '👤'}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 700, color: '#e2e8f0', fontSize: '0.9rem' }}>{u.username}</div>
+                            <Badge color={rm.color} bg={rm.bg} border={rm.border}>{rm.label}</Badge>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* تغییر نقش سریع */}
+                      <td style={{ padding: '10px 14px', minWidth: 200 }}>
+                        <div style={{ display: 'flex', gap: 5 }}>
+                          {Object.entries(ROLE_META).map(([rv, rmeta]) => (
+                            <button
+                              key={rv}
+                              type="button"
+                              title={`تغییر به ${rmeta.label}`}
+                              onClick={() => u.role !== rv && quickToggleRole(u, rv)}
+                              style={{
+                                padding: '4px 9px', borderRadius: 7, fontSize: '0.73rem', cursor: u.role === rv ? 'default' : 'pointer',
+                                background: u.role === rv ? rmeta.bg : 'rgba(15,25,35,0.7)',
+                                border: u.role === rv ? `1.5px solid ${rmeta.border}` : '1px solid rgba(255,255,255,0.08)',
+                                color: u.role === rv ? rmeta.color : '#475569',
+                                fontWeight: u.role === rv ? 700 : 400,
+                                transition: 'all .15s',
+                              }}
+                            >{rmeta.label}</button>
+                          ))}
+                        </div>
+                      </td>
+
+                      {/* تغییر دسترسی سریع */}
+                      <td style={{ padding: '10px 14px', minWidth: 340 }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                          {PERMISSION_OPTIONS.map(p => {
+                            const active = userPerms.includes(p.key);
+                            return (
+                              <button
+                                key={p.key}
+                                type="button"
+                                title={`${active ? 'حذف دسترسی' : 'افزودن دسترسی'}: ${p.desc}`}
+                                onClick={() => quickTogglePerm(u, p.key)}
+                                style={{
+                                  padding: '3px 8px', borderRadius: 12, fontSize: '0.71rem', cursor: 'pointer',
+                                  background: active ? 'rgba(56,189,248,0.15)' : 'rgba(15,25,35,0.6)',
+                                  border: active ? '1px solid rgba(56,189,248,0.4)' : '1px solid rgba(255,255,255,0.06)',
+                                  color: active ? '#7dd3fc' : '#475569',
+                                  transition: 'all .15s',
+                                  opacity: active ? 1 : 0.7,
+                                }}
+                              >{p.label}</button>
+                            );
+                          })}
+                        </div>
+                      </td>
+
+                      {/* عملیات */}
+                      <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button
+                            className="btn-glow"
+                            style={{ padding: '5px 12px', fontSize: '0.78rem' }}
+                            onClick={() => openEdit(u)}
+                          >✏️ ویرایش</button>
+                          <button
+                            className="btn-glow"
+                            style={{ padding: '5px 12px', fontSize: '0.78rem', background: 'rgba(239,68,68,0.18)', border: '1px solid rgba(239,68,68,0.38)', color: '#f87171' }}
+                            onClick={() => setDeleteConfirm(u.id)}
+                          >🗑️</button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </div>
 
-      {/* Modal ساخت / ویرایش */}
+      {/* ===== Modal ===== */}
       {showModal && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
           onClick={() => setShowModal(false)}
         >
           <div
             className="glass-card"
-            style={{ width: '100%', maxWidth: 500, padding: 28, direction: 'rtl', maxHeight: '90vh', overflowY: 'auto' }}
+            style={{ width: '100%', maxWidth: 520, padding: '28px 28px 22px', direction: 'rtl', maxHeight: '92vh', overflowY: 'auto' }}
             onClick={e => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h3 style={{ color: 'var(--accent-cyan)', margin: 0 }}>
-                {editingUser ? '✏️ ویرایش کاربر' : '➕ افزودن کاربر جدید'}
+            {/* modal header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, borderBottom: '1px solid rgba(0,240,255,0.12)', paddingBottom: 14 }}>
+              <h3 style={{ color: 'var(--accent-cyan)', margin: 0, fontSize: '1.15rem' }}>
+                {editingUser ? `✏️ ویرایش کاربر «${editingUser.username}»` : '➕ افزودن کاربر جدید'}
               </h3>
-              <button style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.3rem', cursor: 'pointer' }} onClick={() => setShowModal(false)}>✕</button>
+              <button style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '1.2rem', cursor: 'pointer', lineHeight: 1 }} onClick={() => setShowModal(false)}>✕</button>
             </div>
 
             {/* نام کاربری */}
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.83rem', marginBottom: 5 }}>👤 نام کاربری *</label>
-              <input
-                placeholder="نام کاربری را وارد کنید"
-                value={form.username}
-                onChange={e => setForm({ ...form, username: e.target.value })}
-                style={inputSt}
-              />
-            </div>
+            <label style={labelSt}>👤 نام کاربری *</label>
+            <input placeholder="نام کاربری" value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} style={{ ...inputSt, marginBottom: 14 }} />
 
-            {/* رمز عبور */}
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.83rem', marginBottom: 5 }}>
-                🔒 رمز عبور {editingUser && <span style={{ color: '#64748b' }}>(خالی = بدون تغییر)</span>}
-                {!editingUser && ' *'}
-              </label>
-              <input
-                placeholder={editingUser ? 'برای تغییر رمز وارد کنید...' : 'رمز عبور جدید'}
-                type="password"
-                value={form.password}
-                onChange={e => setForm({ ...form, password: e.target.value })}
-                style={inputSt}
-              />
-            </div>
+            {/* رمز */}
+            <label style={labelSt}>
+              🔒 رمز عبور {editingUser ? <span style={{ color: '#475569', fontWeight: 400 }}>(خالی = بدون تغییر)</span> : '*'}
+            </label>
+            <input
+              type="password" placeholder={editingUser ? 'برای تغییر وارد کنید...' : 'رمز عبور'}
+              value={form.password} onChange={e => setForm({ ...form, password: e.target.value })}
+              style={{ ...inputSt, marginBottom: 18 }}
+            />
 
             {/* نقش */}
-            <div style={{ marginBottom: 18 }}>
-              <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.83rem', marginBottom: 5 }}>🎭 نقش کاربر</label>
-              <div style={{ display: 'flex', gap: 10 }}>
-                {[{v:'user',l:'👤 کاربر'},{v:'manager',l:'🔑 مدیر'},{v:'admin',l:'👑 ادمین'}].map(r => (
-                  <button
-                    key={r.v}
-                    type="button"
-                    onClick={() => setForm({ ...form, role: r.v })}
-                    style={{
-                      flex: 1, padding: '8px 0', borderRadius: 8, cursor: 'pointer',
-                      border: form.role === r.v ? `2px solid ${ROLE_COLOR[r.v]}` : '1px solid rgba(255,255,255,0.1)',
-                      background: form.role === r.v ? `${ROLE_COLOR[r.v]}22` : 'rgba(15,25,40,0.8)',
-                      color: form.role === r.v ? ROLE_COLOR[r.v] : '#94a3b8',
-                      fontWeight: form.role === r.v ? 700 : 400,
-                      fontSize: '0.83rem', transition: 'all .15s'
-                    }}
-                  >{r.l}</button>
-                ))}
-              </div>
+            <label style={labelSt}>🎭 نقش کاربر</label>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+              {Object.entries(ROLE_META).map(([rv, rm]) => (
+                <button key={rv} type="button" onClick={() => setForm({ ...form, role: rv })}
+                  style={{
+                    flex: 1, padding: '9px 0', borderRadius: 9, cursor: 'pointer', transition: 'all .15s',
+                    border: form.role === rv ? `2px solid ${rm.border}` : '1px solid rgba(255,255,255,0.08)',
+                    background: form.role === rv ? rm.bg : 'rgba(5,12,22,0.8)',
+                    color: form.role === rv ? rm.color : '#475569',
+                    fontWeight: form.role === rv ? 700 : 400, fontSize: '0.84rem',
+                  }}
+                >{rm.label}</button>
+              ))}
             </div>
 
-            {/* دسترسی‌ها */}
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <label style={{ color: '#94a3b8', fontSize: '0.83rem' }}>🔐 دسترسی‌ها</label>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <button type="button" style={miniBtn} onClick={setAllPerms}>انتخاب همه</button>
-                  <button type="button" style={{...miniBtn, color:'#f87171', borderColor:'rgba(239,68,68,0.3)'}} onClick={clearAllPerms}>پاک کردن</button>
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                {PERMISSION_OPTIONS.map(p => {
-                  const active = form.permissions.split(',').includes(p.key);
-                  return (
-                    <label
-                      key={p.key}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
-                        padding: '8px 12px', borderRadius: 8,
-                        background: active ? 'rgba(56,189,248,0.12)' : 'rgba(15,25,40,0.6)',
-                        border: active ? '1px solid rgba(56,189,248,0.35)' : '1px solid rgba(255,255,255,0.06)',
-                        transition: 'all .15s'
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={active}
-                        onChange={() => togglePerm(p.key)}
-                        style={{ accentColor: '#38bdf8', width: 15, height: 15 }}
-                      />
-                      <span style={{ fontSize: '0.82rem', color: active ? '#7dd3fc' : '#64748b' }}>{p.label}</span>
-                    </label>
-                  );
-                })}
-              </div>
+            {/* پیش‌تنظیم دسترسی */}
+            <label style={labelSt}>🔐 دسترسی‌ها</label>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+              <span style={{ color: '#64748b', fontSize: '0.78rem', display: 'flex', alignItems: 'center' }}>پیش‌تنظیم:</span>
+              {[['admin','همه دسترسی‌ها'],['manager','مدیر'],['user','کاربر'],['viewer','بیننده'],['none','بدون دسترسی']].map(([k, l]) => (
+                <button key={k} type="button" style={miniBtn} onClick={() => applyPreset(k)}>{l}</button>
+              ))}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginBottom: 22 }}>
+              {PERMISSION_OPTIONS.map(p => {
+                const active = form.permissions.split(',').includes(p.key);
+                return (
+                  <label key={p.key} style={{
+                    display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer',
+                    padding: '9px 11px', borderRadius: 8, transition: 'all .15s',
+                    background: active ? 'rgba(56,189,248,0.1)' : 'rgba(5,12,22,0.6)',
+                    border: active ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)',
+                  }}>
+                    <input type="checkbox" checked={active} onChange={() => togglePerm(p.key)}
+                      style={{ accentColor: '#38bdf8', width: 15, height: 15, marginTop: 2, flexShrink: 0 }}
+                    />
+                    <div>
+                      <div style={{ fontSize: '0.83rem', color: active ? '#7dd3fc' : '#475569', fontWeight: active ? 600 : 400 }}>{p.label}</div>
+                      <div style={{ fontSize: '0.72rem', color: '#334155', marginTop: 1 }}>{p.desc}</div>
+                    </div>
+                  </label>
+                );
+              })}
             </div>
 
             {/* دکمه‌ها */}
             <div style={{ display: 'flex', gap: 10 }}>
-              <button
-                className="btn-glow"
-                onClick={handleSave}
-                disabled={saving}
-                style={{ flex: 1, padding: '10px 0', fontSize: '0.9rem' }}
-              >
-                {saving ? '⏳ در حال ذخیره...' : (editingUser ? '💾 ذخیره تغییرات' : '✅ ساخت کاربر')}
-              </button>
-              <button
-                className="btn-glow"
-                onClick={() => setShowModal(false)}
-                style={{ padding: '10px 20px', background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', color: '#94a3b8' }}
-              >
-                انصراف
-              </button>
+              <button className="btn-glow" onClick={handleSave} disabled={saving}
+                style={{ flex: 1, padding: '10px 0', fontSize: '0.9rem', fontWeight: 700 }}
+              >{saving ? '⏳ ذخیره...' : (editingUser ? '💾 ذخیره تغییرات' : '✅ ساخت کاربر')}</button>
+              <button className="btn-glow" onClick={() => setShowModal(false)}
+                style={{ padding: '10px 18px', background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: '#64748b' }}
+              >انصراف</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal تایید حذف */}
+      {/* ===== Confirm Delete ===== */}
       {deleteConfirm && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1001 }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1001 }}
           onClick={() => setDeleteConfirm(null)}
         >
           <div
             className="glass-card"
-            style={{ padding: 28, maxWidth: 360, width: '90%', textAlign: 'center', direction: 'rtl' }}
+            style={{ padding: 28, maxWidth: 340, width: '90%', textAlign: 'center', direction: 'rtl' }}
             onClick={e => e.stopPropagation()}
           >
-            <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>⚠️</div>
-            <h4 style={{ color: '#fbbf24', marginBottom: 8 }}>حذف کاربر</h4>
-            <p style={{ color: '#94a3b8', marginBottom: 20, fontSize: '0.9rem' }}>
-              آیا مطمئن هستید که می‌خواهید این کاربر را حذف کنید؟ این عمل برگشت‌پذیر نیست.
+            <div style={{ fontSize: '2.8rem', marginBottom: 10 }}>⚠️</div>
+            <h4 style={{ color: '#fbbf24', marginBottom: 8, fontSize: '1.1rem' }}>تأیید حذف کاربر</h4>
+            <p style={{ color: '#64748b', marginBottom: 22, fontSize: '0.88rem', lineHeight: 1.7 }}>
+              این کاربر به طور دائم حذف خواهد شد.<br />این عملیات قابل بازگشت نیست.
             </p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-              <button
-                className="btn-glow"
-                style={{ background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.5)', color: '#f87171', padding: '8px 24px' }}
+              <button className="btn-glow"
+                style={{ background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.5)', color: '#f87171', padding: '9px 22px', fontWeight: 700 }}
                 onClick={handleDelete}
-              >🗑️ بله، حذف کن</button>
-              <button
-                className="btn-glow"
-                style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', color: '#94a3b8', padding: '8px 24px' }}
+              >🗑️ حذف کن</button>
+              <button className="btn-glow"
+                style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: '#64748b', padding: '9px 22px' }}
                 onClick={() => setDeleteConfirm(null)}
               >انصراف</button>
             </div>
@@ -436,24 +474,15 @@ function UserManagement() {
       )}
 
       <style>{`
-        @keyframes fadeIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
       `}</style>
     </div>
   );
 }
 
-const inputSt = {
-  width: '100%', padding: '10px 12px',
-  background: 'rgba(10,15,25,0.8)',
-  border: '1px solid rgba(0,240,255,0.3)',
-  borderRadius: 8, color: '#e0f0ff',
-  fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box',
+const labelSt = {
+  display: 'block', color: '#64748b', fontSize: '0.82rem', marginBottom: 5, fontWeight: 500
 };
-
-const miniBtn = {
-  background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.25)',
-  color: '#38bdf8', padding: '3px 10px', borderRadius: 6,
-  fontSize: '0.75rem', cursor: 'pointer',
-};
-
-export default UserManagement;
