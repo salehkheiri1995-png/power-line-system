@@ -447,11 +447,12 @@ def import_from_records(
     return {"message": f"{added} رکورد تعمیر اضافه شد"}
 
 
+# ========== Complete Plans (اصلاح شده: همه کاربران لاگین‌شده مجاز) ==========
 @router.post("/complete-plans")
 def complete_plans(
     plan_ids: List[str],
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_admin_user),
+    current_user: User = Depends(get_current_user),   # ✅ تغییر از admin به user عادی
 ):
     for pid in plan_ids:
         task = db.query(PlannedTask).filter(PlannedTask.id == pid).first()
