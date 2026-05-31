@@ -1250,86 +1250,225 @@ select.input-field {
 }
 
 /* ==========================================================
-   TOWER MANAGEMENT — مدیریت خطوط و دکل‌ها
+   TOWER MANAGEMENT — tm-* classes
+   دو تب: نقشه | گزارش‌ها
    ========================================================== */
 
-/* ─── لی‌اوت اصلی ─── */
-.tower-layout {
+/* ─── ریشه کامپوننت ─── */
+.tm-root {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
-  height: calc(100vh - var(--space-12));
-  min-height: 600px;
+  gap: var(--space-4);
   animation: fadeIn 0.25s ease;
+  min-height: 0;
 }
 
-/* ردیف اصلی: پنل چپ + نقشه + پنل راست */
-.tower-main-row {
-  display: grid;
-  grid-template-columns: 260px 1fr 280px;
-  gap: var(--space-4);
-  flex: 1;
+/* ─── هدر ─── */
+.tm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+
+.tm-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.tm-header-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.tm-header-title {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.tm-header-sub {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin: 2px 0 0;
+  font-weight: 500;
+}
+
+.tm-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* ─── نوار تب ─── */
+.tm-tab-bar {
+  display: flex;
+  gap: var(--space-1);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2);
+  box-shadow: var(--shadow-sm);
+}
+
+.tm-tab {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 9px 20px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  border: 1px solid transparent;
+  background: transparent;
+  position: relative;
+}
+
+.tm-tab:hover {
+  background: var(--color-surface-offset);
+  color: var(--color-text);
+}
+
+.tm-tab.active {
+  background: var(--color-primary-faint);
+  border-color: rgba(1,105,111,0.25);
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.tm-tab-icon {
+  font-size: 1rem;
+}
+
+.tm-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-error);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* ─── تب نقشه ─── */
+.tm-map-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
   min-height: 0;
-  height: 100%;
+  animation: fadeIn 0.2s ease;
+}
+
+/* نوار فیلتر بالای نقشه — compact */
+.tm-map-toolbar {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+
+/* بدنه اصلی: درخت | نقشه | جزئیات */
+.tm-map-body {
+  display: grid;
+  grid-template-columns: 240px 1fr 260px;
+  gap: var(--space-3);
+  height: calc(100vh - 290px);
+  min-height: 480px;
 }
 
 /* ─── پنل‌های کناری ─── */
-.tower-panel-left,
-.tower-panel-right {
+.tm-side-panel {
+  display: flex;
+  flex-direction: column;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.tm-side-header {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-divider);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-text);
+  background: var(--color-surface-offset);
+  flex-shrink: 0;
+}
+
+.tm-side-count {
+  background: var(--color-primary-faint);
+  border: 1px solid rgba(1,105,111,0.2);
+  color: var(--color-primary);
+  border-radius: var(--radius-pill);
+  padding: 1px 8px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.tm-side-scroll {
+  flex: 1;
   overflow-y: auto;
-  height: 100%;
-}
-
-.tower-panel-left {
-  min-width: 0;
-}
-
-.tower-panel-right {
-  min-width: 0;
+  padding: var(--space-3);
 }
 
 /* ─── ظرف نقشه ─── */
-.tower-map-container {
+.tm-map-wrap {
   position: relative;
   border-radius: var(--radius-lg);
   overflow: hidden;
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-md);
+  background: var(--color-surface-offset);
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  height: 100%;
-  background: var(--color-surface-offset);
 }
 
-/* نقشه لیفلت باید کل ارتفاع ظرف رو بپوشاند */
-.tower-map-fill {
+/* نقشه لیفلت باید کل ارتفاع ظرف رو پر کنه */
+.tm-map-fill {
   flex: 1;
-  width: 100%;
+  width: 100% !important;
   height: 100% !important;
-  min-height: 400px;
+  min-height: 0;
   z-index: 1;
 }
 
-/* راهنمای پایین نقشه */
-.tower-map-hint {
+/* راهنما پایین نقشه */
+.tm-map-hint {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 10;
-  background: rgba(40, 37, 29, 0.72);
+  background: rgba(40,37,29,0.7);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  color: rgba(255, 255, 255, 0.88);
+  color: rgba(255,255,255,0.9);
   font-size: var(--text-xs);
   font-weight: 500;
   padding: 6px var(--space-4);
@@ -1337,9 +1476,8 @@ select.input-field {
   letter-spacing: 0.02em;
   pointer-events: none;
 }
-
-[data-theme="dark"] .tower-map-hint {
-  background: rgba(0, 0, 0, 0.65);
+[data-theme="dark"] .tm-map-hint {
+  background: rgba(0,0,0,0.65);
 }
 
 /* ─── آیکون‌های دکل روی نقشه ─── */
@@ -1354,17 +1492,14 @@ select.input-field {
   border: 2px solid #fff;
   box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
-
 .tower-icon-html:hover {
   transform: scale(1.2);
   box-shadow: 0 4px 14px rgba(0,0,0,0.4);
 }
-
 .tower-icon-html.normal {
   background: var(--color-primary);
   border-color: rgba(255,255,255,0.85);
 }
-
 .tower-icon-html.selected {
   background: #1d6fa4;
   border-color: #fff;
@@ -1372,13 +1507,11 @@ select.input-field {
   transform: scale(1.15);
   font-size: 13px;
 }
-
 .tower-icon-html.urgent {
   background: var(--color-error);
   border-color: rgba(255,255,255,0.85);
   animation: urgentPulse 1.8s ease-in-out infinite;
 }
-
 @keyframes urgentPulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(181,42,30,0.5), 0 2px 8px rgba(0,0,0,0.3); }
   50%       { box-shadow: 0 0 0 6px rgba(181,42,30,0), 0 2px 8px rgba(0,0,0,0.3); }
@@ -1393,7 +1526,6 @@ select.input-field {
   color: #1a1a2e;
   min-width: 160px;
 }
-
 .tower-popup-content strong {
   font-size: 14px;
   color: var(--color-primary);
@@ -1401,26 +1533,102 @@ select.input-field {
   margin-bottom: 4px;
 }
 
-/* ─── ردیف جداول پایین ─── */
-.tower-bottom-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+/* ─── تب گزارش‌ها ─── */
+.tm-reports-view {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-4);
+  animation: fadeIn 0.2s ease;
 }
 
-.tower-bottom-row > * {
+/* کارت‌های KPI */
+.tm-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+}
+
+.tm-kpi-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
-  padding: var(--space-4);
-  overflow: hidden;
+  transition: box-shadow var(--transition-base), transform var(--transition-base);
+}
+.tm-kpi-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
-/* ==========================================================
-   TOWER DETAIL — پنل جزئیات دکل
-   ========================================================== */
+.tm-kpi-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
 
+.tm-kpi-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tm-kpi-val {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.tm-kpi-label {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+/* رنگ‌بندی کارت‌های KPI */
+.tm-kpi-primary .tm-kpi-val { color: var(--color-primary); }
+.tm-kpi-warning .tm-kpi-val { color: var(--color-error); }
+.tm-kpi-info    .tm-kpi-val { color: #1d6fa4; }
+.tm-kpi-success .tm-kpi-val { color: var(--color-success); }
+
+.tm-kpi-primary { border-top: 3px solid var(--color-primary); }
+.tm-kpi-warning { border-top: 3px solid var(--color-error); }
+.tm-kpi-info    { border-top: 3px solid #1d6fa4; }
+.tm-kpi-success { border-top: 3px solid var(--color-success); }
+
+/* فیلتر گزارش */
+.tm-reports-filter {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ردیف جداول — دو ستون */
+.tm-reports-tables {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  min-height: 0;
+}
+
+.tm-report-block {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 380px;
+  max-height: calc(100vh - 480px);
+}
+
+/* ─── TowerDetail — جزئیات دکل در پنل راست ─── */
 .tower-detail-empty {
   display: flex;
   flex-direction: column;
@@ -1434,7 +1642,6 @@ select.input-field {
   gap: var(--space-3);
   padding: var(--space-8) var(--space-4);
 }
-
 .tower-detail-empty::before {
   content: '🗼';
   font-size: 2rem;
@@ -1476,13 +1683,11 @@ select.input-field {
   font-size: var(--text-sm);
   gap: var(--space-2);
 }
-
 .tower-info-row span:first-child {
   color: var(--color-text-muted);
   font-weight: 600;
   flex-shrink: 0;
 }
-
 .tower-info-row span:last-child {
   color: var(--color-text);
   font-weight: 500;
@@ -1540,7 +1745,6 @@ select.input-field {
   line-height: 1.7;
   transition: background var(--transition-fast), border-color var(--transition-fast);
 }
-
 .tower-history-card:hover {
   background: var(--color-surface-offset);
   border-color: var(--color-divider);
@@ -1569,54 +1773,59 @@ select.input-field {
    TOWER MANAGEMENT — RESPONSIVE
    ========================================================== */
 
-@media (max-width: 1200px) {
-  .tower-main-row {
-    grid-template-columns: 220px 1fr 240px;
+@media (max-width: 1280px) {
+  .tm-map-body {
+    grid-template-columns: 210px 1fr 230px;
+  }
+  .tm-kpi-row {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 960px) {
-  .tower-main-row {
+  .tm-map-body {
     grid-template-columns: 1fr;
-    grid-template-rows: auto 420px auto;
+    grid-template-rows: 200px 420px 200px;
     height: auto;
   }
-
-  .tower-layout {
-    height: auto;
-  }
-
-  .tower-panel-left,
-  .tower-panel-right {
-    height: auto;
-    max-height: 300px;
-  }
-
-  .tower-map-container {
+  .tm-map-wrap {
     height: 420px;
     min-height: 420px;
   }
-
-  .tower-map-fill {
-    min-height: 420px;
+  .tm-map-fill {
+    min-height: 420px !important;
   }
-
-  .tower-bottom-row {
+  .tm-reports-tables {
     grid-template-columns: 1fr;
+  }
+  .tm-report-block {
+    max-height: 400px;
+  }
+  .tm-kpi-row {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 600px) {
-  .tower-main-row {
-    grid-template-rows: auto 320px auto;
+  .tm-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
-
-  .tower-map-container {
+  .tm-map-body {
+    grid-template-rows: 160px 320px 180px;
+  }
+  .tm-map-wrap {
     height: 320px;
     min-height: 320px;
   }
-
-  .tower-map-fill {
-    min-height: 320px;
+  .tm-map-fill {
+    min-height: 320px !important;
+  }
+  .tm-kpi-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .tm-tab {
+    padding: 8px 12px;
+    font-size: var(--text-xs);
   }
 }
