@@ -13,7 +13,7 @@ const Dashboard = lazy(() => import('./components/Dashboard'));
 const DataTable  = lazy(() => import('./components/DataTable'));
 const Report     = lazy(() => import('./components/Report'));
 
-// Theme initialisation — must run before React mounts to avoid flash
+// Theme init before React mounts — prevents flash
 (function () {
   try {
     const stored = sessionStorage.getItem('theme');
@@ -37,7 +37,10 @@ function App() {
   const [analyticsFilters, setAnalyticsFilters] = useState({});
 
   const [theme, setTheme] = useState(() => {
-    try { return sessionStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); } catch (_) { return 'light'; }
+    try {
+      return sessionStorage.getItem('theme') ||
+        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    } catch (_) { return 'light'; }
   });
 
   const toggleTheme = () => {
@@ -87,7 +90,7 @@ function App() {
       const optRes = await getFilterOptions();
       setFilterOptions(optRes.data);
     } catch (err) {
-      console.error('\u062e\u0637\u0627 \u062f\u0631 \u0628\u0627\u0631\u06af\u0630\u0627\u0631\u06cc:', err);
+      console.error('خطا در بارگذاری:', err);
       setDataLoaded(true);
     } finally {
       if (!silent) setIsLoading(false);
@@ -104,9 +107,9 @@ function App() {
       const { uploadExcel } = await import('./api');
       await uploadExcel(file);
       await loadInitialData();
-      alert('\u2705 \u062f\u0627\u062f\u0647\u200c\u0647\u0627 \u0628\u0627 \u0645\u0648\u0641\u0642\u06cc\u062a \u0628\u0627\u0631\u06af\u0630\u0627\u0631\u06cc \u0634\u062f\u0646\u062f');
+      alert('✅ داده‌ها با موفقیت بارگذاری شدند');
     } catch {
-      alert('\u274c \u062e\u0637\u0627 \u062f\u0631 \u0628\u0627\u0631\u06af\u0630\u0627\u0631\u06cc \u0641\u0627\u06cc\u0644');
+      alert('❌ خطا در بارگذاری فایل');
     } finally {
       setIsLoading(false);
     }
@@ -131,6 +134,7 @@ function App() {
     return (
       <div className="loading-center">
         <div className="spinner" />
+        <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', marginTop: '8px' }}>در حال بارگذاری...</p>
       </div>
     );
   }
@@ -142,14 +146,20 @@ function App() {
 
   return (
     <div className="app-root">
+      {/* دکمه تغییر تم — گوشه پایین چپ، دور از دکمه‌های sidebar */}
       <button
         className="theme-toggle"
         onClick={toggleTheme}
-        aria-label={theme === 'dark' ? '\u062d\u0627\u0644\u062a \u0631\u0648\u0634\u0646' : '\u062d\u0627\u0644\u062a \u062a\u0627\u0631\u06cc\u06a9'}
-        title={theme === 'dark' ? '\u062d\u0627\u0644\u062a \u0631\u0648\u0634\u0646' : '\u062d\u0627\u0644\u062a \u062a\u0627\u0631\u06cc\u06a9'}
-        style={{ position: 'fixed', bottom: '20px', left: '20px', zIndex: 300 }}
+        aria-label={theme === 'dark' ? 'حالت روشن' : 'حالت تاریک'}
+        title={theme === 'dark' ? 'حالت روشن' : 'حالت تاریک'}
+        style={{
+          position: 'fixed',
+          bottom: '20px',
+          left: '20px',
+          zIndex: 300,
+        }}
       >
-        {theme === 'dark' ? '\u2600\ufe0f' : '\ud83c\udf19'}
+        {theme === 'dark' ? '☀️' : '🌙'}
       </button>
 
       <Sidebar
