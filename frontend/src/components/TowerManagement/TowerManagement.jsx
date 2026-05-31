@@ -47,6 +47,8 @@ function FlyToSelected({ towerId, towers }) {
 }
 
 function TowerManagement() {
+  const [activeTab, setActiveTab] = useState('map');
+
   const [lines, setLines]                       = useState([]);
   const [towers, setTowers]                     = useState([]);
   const [selectedLineId, setSelectedLineId]     = useState(null);
@@ -91,6 +93,7 @@ function TowerManagement() {
   };
 
   const parseJalaliToDate = (dateStr) => {
+    if (!dateStr) return null;
     const parts = dateStr.split('/');
     if (parts.length !== 3) return null;
     const [y, m, d] = parts.map(Number);
@@ -165,110 +168,232 @@ function TowerManagement() {
     return (next - new Date()) / (1000 * 60 * 60 * 24) <= 30;
   };
 
+  const urgentCount = useMemo(
+    () => filteredTowers.filter(getTowerUrgency).length,
+    [filteredTowers]
+  );
+
+  const openPlansCount = useMemo(
+    () => filteredPlannedTasks.filter(p => p.status === 'planned').length,
+    [filteredPlannedTasks]
+  );
+
   return (
-    <div className="tower-layout">
-      <div className="tower-main-row">
-        {/* پنل چپ */}
-        <div className="tower-panel-left">
-          <TowerFilterPanel lines={lines} onFilter={setFilters} />
-          <button className="btn-glow" onClick={handleImport}>
-            🔄 بارگذاری از رکوردها
+    <div className="tm-root">
+
+      {/* ───── هدر + تب‌ها ───── */}
+      <div className="tm-header">
+        <div className="tm-header-right">
+          <span className="tm-header-icon">🗺️</span>
+          <div>
+            <h2 className="tm-header-title">مدیریت خطوط و دکل‌ها</h2>
+            <p className="tm-header-sub">
+              {lines.length} خط | {towers.length} دکل
+            </p>
+          </div>
+        </div>
+
+        <div className="tm-header-actions">
+          <button className="btn-glow btn-sm" onClick={handleImport} title="بارگذاری از رکوردها">
+            🔄 بارگذاری
           </button>
-          <button className="btn-glow btn-blue" onClick={() => setShowLineModal(true)}>
-            ➕ افزودن خط
+          <button className="btn-glow btn-blue btn-sm" onClick={() => setShowLineModal(true)}>
+            ➕ خط جدید
           </button>
           <button
-            className="btn-glow btn-amber"
+            className="btn-glow btn-amber btn-sm"
             onClick={async () => {
               await api.post('/lines-towers/update-all-tower-dates');
               loadData();
             }}
           >
-            ⚡ محاسبه تعمیرات ضروری
+            ⚡ محاسبه ضروری
           </button>
-          <TowerTree
-            lines={filteredLines}
-            towers={filteredTowers}
-            selectedLineId={selectedLineId}
-            selectedTowerId={selectedTowerId}
-            onSelectLine={handleSelectLine}
-            onSelectTower={handleSelectTower}
-          />
         </div>
+      </div>
 
-        {/* نقشه */}
-        <div className="tower-map-container">
-          <MapContainer
-            center={[37.5, 47.0]}
-            zoom={8}
-            className="tower-map-fill"
-            scrollWheelZoom={true}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            <FlyToSelected towerId={selectedTowerId} towers={filteredTowers} />
-            {filteredTowers.map(tower => {
-              const pos        = schematicToLatLng(tower.x, tower.y);
-              const isSelected = selectedTowerId === tower.id;
-              const isUrgent   = getTowerUrgency(tower);
-              return (
-                <Marker
-                  key={tower.id}
-                  position={[pos.lat, pos.lng]}
-                  icon={towerIcon(isSelected, isUrgent)}
-                  eventHandlers={{ click: () => handleSelectTower(tower.id) }}
-                >
-                  <Popup>
-                    <div className="tower-popup-content">
-                      <strong>🗼 دکل {tower.number}</strong><br />
-                      <span>خط: {lines.find(l => l.id === tower.line_id)?.name}</span><br />
-                      <span>آخرین تعمیر: {tower.last_maintenance || '—'}</span><br />
-                      <span>موعد بعدی: {tower.next_maintenance || '—'}</span>
-                    </div>
-                  </Popup>
-                </Marker>
-              );
-            })}
-          </MapContainer>
-          <div className="tower-map-hint">
-            🖱️ اسکرول برای زوم | کلیک روی نشانگر برای جزئیات
+      {/* ───── ناوبری تب ───── */}
+      <div className="tm-tab-bar">
+        <button
+          className={`tm-tab ${activeTab === 'map' ? 'active' : ''}`}
+          onClick={() => setActiveTab('map')}
+        >
+          <span className="tm-tab-icon">🗺️</span>
+          نقشه و درخت خطوط
+        </button>
+        <button
+          className={`tm-tab ${activeTab === 'reports' ? 'active' : ''}`}
+          onClick={() => setActiveTab('reports')}
+        >
+          <span className="tm-tab-icon">📋</span>
+          گزارش‌ها و برنامه‌ها
+          {(urgentCount + openPlansCount) > 0 && (
+            <span className="tm-tab-badge">{urgentCount + openPlansCount}</span>
+          )}
+        </button>
+      </div>
+
+      {/* ═══════════════════════════════════
+          تب ۱: نقشه
+      ═══════════════════════════════════ */}
+      {activeTab === 'map' && (
+        <div className="tm-map-view">
+
+          {/* ردیف فیلتر بالای نقشه */}
+          <div className="tm-map-toolbar">
+            <TowerFilterPanel lines={lines} onFilter={setFilters} compact />
+          </div>
+
+          {/* بدنه اصلی: درخت | نقشه | جزئیات */}
+          <div className="tm-map-body">
+
+            {/* پنل درخت خطوط */}
+            <div className="tm-side-panel tm-side-left">
+              <div className="tm-side-header">
+                <span>📡 خطوط و دکل‌ها</span>
+                <span className="tm-side-count">{filteredTowers.length}</span>
+              </div>
+              <div className="tm-side-scroll">
+                <TowerTree
+                  lines={filteredLines}
+                  towers={filteredTowers}
+                  selectedLineId={selectedLineId}
+                  selectedTowerId={selectedTowerId}
+                  onSelectLine={handleSelectLine}
+                  onSelectTower={handleSelectTower}
+                />
+              </div>
+            </div>
+
+            {/* نقشه لیفلت */}
+            <div className="tm-map-wrap">
+              <MapContainer
+                center={[37.5, 47.0]}
+                zoom={8}
+                className="tm-map-fill"
+                scrollWheelZoom={true}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <FlyToSelected towerId={selectedTowerId} towers={filteredTowers} />
+                {filteredTowers.map(tower => {
+                  const pos        = schematicToLatLng(tower.x, tower.y);
+                  const isSelected = selectedTowerId === tower.id;
+                  const isUrgent   = getTowerUrgency(tower);
+                  return (
+                    <Marker
+                      key={tower.id}
+                      position={[pos.lat, pos.lng]}
+                      icon={towerIcon(isSelected, isUrgent)}
+                      eventHandlers={{ click: () => handleSelectTower(tower.id) }}
+                    >
+                      <Popup>
+                        <div className="tower-popup-content">
+                          <strong>🗼 دکل {tower.number}</strong>
+                          <span>خط: {lines.find(l => l.id === tower.line_id)?.name}</span>
+                          <span>آخرین تعمیر: {tower.last_maintenance || '—'}</span>
+                          <span>موعد بعدی: {tower.next_maintenance || '—'}</span>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  );
+                })}
+              </MapContainer>
+              <div className="tm-map-hint">
+                🖱️ اسکرول برای زوم &nbsp;|&nbsp; کلیک روی نشانگر برای جزئیات
+              </div>
+            </div>
+
+            {/* پنل جزئیات دکل */}
+            <div className="tm-side-panel tm-side-right">
+              <div className="tm-side-header">
+                <span>🔍 جزئیات</span>
+              </div>
+              <div className="tm-side-scroll">
+                <TowerDetail
+                  selectedLineId={selectedLineId}
+                  selectedTowerId={selectedTowerId}
+                  lines={filteredLines}
+                  towers={filteredTowers}
+                  maintenanceRecords={maintenanceRecords}
+                  plannedTasks={filteredPlannedTasks}
+                  onAddTower={(lineId) => { setSelectedLineId(lineId); setShowTowerModal(true); }}
+                  onDataChanged={loadData}
+                />
+              </div>
+            </div>
           </div>
         </div>
+      )}
 
-        {/* پنل راست */}
-        <div className="tower-panel-right">
-          <TowerDetail
-            selectedLineId={selectedLineId}
-            selectedTowerId={selectedTowerId}
-            lines={filteredLines}
-            towers={filteredTowers}
-            maintenanceRecords={maintenanceRecords}
-            plannedTasks={filteredPlannedTasks}
-            onAddTower={(lineId) => { setSelectedLineId(lineId); setShowTowerModal(true); }}
-            onDataChanged={loadData}
-          />
+      {/* ═══════════════════════════════════
+          تب ۲: گزارش‌ها
+      ═══════════════════════════════════ */}
+      {activeTab === 'reports' && (
+        <div className="tm-reports-view">
+
+          {/* کارت‌های خلاصه */}
+          <div className="tm-kpi-row">
+            <div className="tm-kpi-card tm-kpi-primary">
+              <div className="tm-kpi-icon">🗼</div>
+              <div className="tm-kpi-body">
+                <div className="tm-kpi-val">{towers.length}</div>
+                <div className="tm-kpi-label">کل دکل‌ها</div>
+              </div>
+            </div>
+            <div className="tm-kpi-card tm-kpi-warning">
+              <div className="tm-kpi-icon">⚠️</div>
+              <div className="tm-kpi-body">
+                <div className="tm-kpi-val">{urgentCount}</div>
+                <div className="tm-kpi-label">تعمیر ضروری</div>
+              </div>
+            </div>
+            <div className="tm-kpi-card tm-kpi-info">
+              <div className="tm-kpi-icon">📅</div>
+              <div className="tm-kpi-body">
+                <div className="tm-kpi-val">{openPlansCount}</div>
+                <div className="tm-kpi-label">برنامه باز</div>
+              </div>
+            </div>
+            <div className="tm-kpi-card tm-kpi-success">
+              <div className="tm-kpi-icon">⚡</div>
+              <div className="tm-kpi-body">
+                <div className="tm-kpi-val">{lines.length}</div>
+                <div className="tm-kpi-label">خط انتقال</div>
+              </div>
+            </div>
+          </div>
+
+          {/* فیلتر گزارش */}
+          <div className="tm-reports-filter">
+            <TowerFilterPanel lines={lines} onFilter={setFilters} />
+          </div>
+
+          {/* جداول */}
+          <div className="tm-reports-tables">
+            <div className="tm-report-block">
+              <UrgentMaintTable
+                towers={filteredTowers}
+                lines={filteredLines}
+                plannedTasks={filteredPlannedTasks}
+                viewMode={filters.viewMode}
+                onDataChanged={loadData}
+              />
+            </div>
+            <div className="tm-report-block">
+              <PlannedTasksTable
+                plannedTasks={filteredPlannedTasks}
+                lines={filteredLines}
+                towers={towers}
+                filters={filters}
+                onDataChanged={loadData}
+              />
+            </div>
+          </div>
         </div>
-      </div>
-
-      {/* جداول پایین */}
-      <div className="tower-bottom-row">
-        <UrgentMaintTable
-          towers={filteredTowers}
-          lines={filteredLines}
-          plannedTasks={filteredPlannedTasks}
-          viewMode={filters.viewMode}
-          onDataChanged={loadData}
-        />
-        <PlannedTasksTable
-          plannedTasks={filteredPlannedTasks}
-          lines={filteredLines}
-          towers={towers}
-          filters={filters}
-          onDataChanged={loadData}
-        />
-      </div>
+      )}
 
       <TowerModals
         showLineModal={showLineModal}   setShowLineModal={setShowLineModal}
