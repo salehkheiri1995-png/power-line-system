@@ -125,8 +125,15 @@ function AddRecordPanel({ onSuccess }) {
       if (completePlanIds.length > 0) {
         await completePlans(completePlanIds);
       }
-      setMessage({ type: 'success', text: '✅ رکورد و برنامه‌های مرتبط با موفقیت ثبت شد.' });
+      // پیام موفقیت واضح‌تر بعد از ثبت رکورد
+      setMessage({
+        type: 'success',
+        text: `✅ رکورد جدید با موفقیت ثبت شد${completePlanIds.length > 0 ? ' و برنامه‌های انتخاب‌شده تکمیل شدند.' : '.'}`,
+      });
       if (onSuccess) onSuccess();
+
+      // بعد از چند ثانیه پیام را مخفی کن
+      setTimeout(() => setMessage(null), 4000);
 
       // ریست فرم
       setForm({
@@ -139,6 +146,8 @@ function AddRecordPanel({ onSuccess }) {
     } catch (err) {
       console.error(err);
       setMessage({ type: 'error', text: '❌ خطا در ثبت رکورد.' });
+      // خطا هم بعد از چند ثانیه جمع شود
+      setTimeout(() => setMessage(null), 5000);
     }
   };
 
@@ -394,6 +403,7 @@ function AddRecordPanel({ onSuccess }) {
               setForm({ program_type: '', code: '', line_name: '', voltage_level: '', work_description: '', tower_number: '', location: '', team_count: '', personnel_count: '', supervisor: '', quantity: '', unit: '' });
               setOpenPlans([]);
               setSelectedTowerIdsByPlan({});
+              setMessage(null);
             }}>
             🗑️ پاک کردن فرم
           </button>
@@ -409,6 +419,22 @@ function AddRecordPanel({ onSuccess }) {
         .suggestion-item:hover {
           background-color: var(--accent-cyan);
           color: black;
+        }
+        .message.success {
+          background: rgba(34,197,94,0.15);
+          border: 1px solid #22c55e;
+          color: #bbf7d0;
+          padding: 10px 12px;
+          border-radius: 8px;
+          font-size: 0.9rem;
+        }
+        .message.error {
+          background: rgba(248,113,113,0.12);
+          border: 1px solid #f97373;
+          color: #fecaca;
+          padding: 10px 12px;
+          border-radius: 8px;
+          font-size: 0.9rem;
         }
       `}</style>
     </div>
