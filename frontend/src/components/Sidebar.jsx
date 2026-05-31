@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const ALL_TABS = [
   { id: 'dashboard', label: 'داشبورد',         icon: '📊' },
@@ -19,18 +19,45 @@ function Sidebar({ activeTab, onTabChange, role, onLogout }) {
   const allowedPermissions = permissions.split(',');
   const tabs = ALL_TABS.filter(tab => allowedPermissions.includes(tab.id));
 
+  // وقتی sidebar باز/بسته می‌شه کلاس sidebar-open روی app-root تغییر کنه
+  // تا main content شیفت بخوره و sidebar روش overlap نکنه
+  useEffect(() => {
+    const root = document.querySelector('.app-root');
+    if (!root) return;
+    if (!collapsed) {
+      root.classList.add('sidebar-open');
+    } else {
+      root.classList.remove('sidebar-open');
+    }
+    return () => {
+      // cleanup هنگام unmount
+      root.classList.remove('sidebar-open');
+    };
+  }, [collapsed]);
+
+  const handleClose = () => setCollapsed(true);
+  const handleToggle = () => setCollapsed(prev => !prev);
+  const handleTabChange = (tabId) => {
+    onTabChange(tabId);
+    // در موبایل بعد از انتخاب تب، sidebar بسته شود
+    if (window.innerWidth <= 768) {
+      setCollapsed(true);
+    }
+  };
+
   return (
     <>
+      {/* دکمه باز/بستن */}
       <button
         className="sb-toggle"
-        data-open={String(!collapsed)}
-        onClick={() => setCollapsed(!collapsed)}
+        onClick={handleToggle}
         aria-label={collapsed ? 'باز کردن منو' : 'بستن منو'}
         title={collapsed ? 'باز کردن منو' : 'بستن منو'}
       >
         {collapsed ? '☰' : '✕'}
       </button>
 
+      {/* پنل sidebar */}
       <aside className={`sb-panel${collapsed ? ' closed' : ''}`} aria-label="منوی اصلی">
         <div className="sb-logo-section">
           <h2 className="sb-logo-title">⚡ سامانه برق</h2>
@@ -42,7 +69,7 @@ function Sidebar({ activeTab, onTabChange, role, onLogout }) {
             <button
               key={tab.id}
               className={`sb-nav-btn${activeTab === tab.id ? ' active' : ''}`}
-              onClick={() => onTabChange(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               title={tab.label}
             >
               <span className="sb-icon">{tab.icon}</span>
@@ -71,13 +98,23 @@ function Sidebar({ activeTab, onTabChange, role, onLogout }) {
         </div>
       </aside>
 
+      {/* Overlay — برای بستن sidebar با کلیک بیرون */}
+      {!collapsed && (
+        <div
+          className="sb-overlay"
+          onClick={handleClose}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* آیکون‌های شناور — فقط وقتی sidebar بسته است */}
       {collapsed && (
         <div className="sb-float-btns">
           {tabs.map(tab => (
             <button
               key={tab.id}
               className={`sb-float-btn${activeTab === tab.id ? ' active' : ''}`}
-              onClick={() => onTabChange(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               title={tab.label}
               aria-label={tab.label}
             >
