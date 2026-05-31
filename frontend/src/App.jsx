@@ -13,6 +13,15 @@ const Dashboard = lazy(() => import('./components/Dashboard'));
 const DataTable  = lazy(() => import('./components/DataTable'));
 const Report     = lazy(() => import('./components/Report'));
 
+// Theme initialisation — must run before React mounts to avoid flash
+(function () {
+  try {
+    const stored = sessionStorage.getItem('theme');
+    const sys = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', stored || sys);
+  } catch (_) {}
+})();
+
 function App() {
   const [isLoggedIn, setIsLoggedIn]   = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
@@ -27,15 +36,21 @@ function App() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [analyticsFilters, setAnalyticsFilters] = useState({});
 
+  const [theme, setTheme] = useState(() => {
+    try { return sessionStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); } catch (_) { return 'light'; }
+  });
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    document.documentElement.setAttribute('data-theme', next);
+    try { sessionStorage.setItem('theme', next); } catch (_) {}
+  };
+
   useEffect(() => {
     const verifyToken = async () => {
       const token = localStorage.getItem('token');
-      if (!token) {
-        setIsLoggedIn(false);
-        setAuthChecked(true);
-        return;
-      }
-
+      if (!token) { setIsLoggedIn(false); setAuthChecked(true); return; }
       try {
         await api.get('/users/me');
         setIsLoggedIn(true);
@@ -48,7 +63,6 @@ function App() {
         setAuthChecked(true);
       }
     };
-
     verifyToken();
   }, []);
 
@@ -58,27 +72,22 @@ function App() {
       setDataLoaded(false);
       setRecords([]);
     };
-
     window.addEventListener('auth-error', handleAuthError);
     return () => window.removeEventListener('auth-error', handleAuthError);
   }, []);
 
   const loadInitialData = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setIsLoading(true);
-
     try {
       const qsRes = await api.get('/quick-stats').then(r => r.data);
       setQuickStats(qsRes);
-
       const recRes = await getRecords(0, 10000);
       setRecords(recRes.data);
-
       setDataLoaded(true);
-
       const optRes = await getFilterOptions();
       setFilterOptions(optRes.data);
     } catch (err) {
-      console.error('خطا در بارگذاری:', err);
+      console.error('\u062e\u0637\u0627 \u062f\u0631 \u0628\u0627\u0631\u06af\u0630\u0627\u0631\u06cc:', err);
       setDataLoaded(true);
     } finally {
       if (!silent) setIsLoading(false);
@@ -86,9 +95,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (isLoggedIn) {
-      loadInitialData();
-    }
+    if (isLoggedIn) loadInitialData();
   }, [isLoggedIn, loadInitialData]);
 
   const handleUpload = async (file) => {
@@ -97,18 +104,15 @@ function App() {
       const { uploadExcel } = await import('./api');
       await uploadExcel(file);
       await loadInitialData();
-      alert('✅ داده‌ها با موفقیت بارگذاری شدند');
+      alert('\u2705 \u062f\u0627\u062f\u0647\u200c\u0647\u0627 \u0628\u0627 \u0645\u0648\u0641\u0642\u06cc\u062a \u0628\u0627\u0631\u06af\u0630\u0627\u0631\u06cc \u0634\u062f\u0646\u062f');
     } catch {
-      alert('❌ خطا در بارگذاری فایل');
+      alert('\u274c \u062e\u0637\u0627 \u062f\u0631 \u0628\u0627\u0631\u06af\u0630\u0627\u0631\u06cc \u0641\u0627\u06cc\u0644');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleLogin = () => {
-    setIsLoggedIn(true);
-    setAuthChecked(true);
-  };
+  const handleLogin = () => { setIsLoggedIn(true); setAuthChecked(true); };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -122,56 +126,6 @@ function App() {
   const fieldsForAdd = records.length > 0
     ? Object.keys(records[0]).filter(k => k !== 'id')
     : [];
-
-  useEffect(() => {
-    const canvas = document.getElementById('space-canvas');
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    let animationId;
-
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-
-    resize();
-    window.addEventListener('resize', resize);
-
-    const stars = Array.from({ length: 160 }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      r: Math.random() * 1.8,
-      speed: Math.random() * 0.45 + 0.15,
-      opacity: Math.random() * 0.75 + 0.2,
-    }));
-
-    const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      stars.forEach(s => {
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,255,255,${s.opacity})`;
-        ctx.fill();
-
-        s.y += s.speed;
-        if (s.y > canvas.height) {
-          s.y = 0;
-          s.x = Math.random() * canvas.width;
-        }
-      });
-
-      animationId = requestAnimationFrame(animate);
-    };
-
-    animate();
-
-    return () => {
-      cancelAnimationFrame(animationId);
-      window.removeEventListener('resize', resize);
-    };
-  }, []);
 
   if (!authChecked) {
     return (
@@ -188,7 +142,15 @@ function App() {
 
   return (
     <div className="app-root">
-      <canvas id="space-canvas" />
+      <button
+        className="theme-toggle"
+        onClick={toggleTheme}
+        aria-label={theme === 'dark' ? '\u062d\u0627\u0644\u062a \u0631\u0648\u0634\u0646' : '\u062d\u0627\u0644\u062a \u062a\u0627\u0631\u06cc\u06a9'}
+        title={theme === 'dark' ? '\u062d\u0627\u0644\u062a \u0631\u0648\u0634\u0646' : '\u062d\u0627\u0644\u062a \u062a\u0627\u0631\u06cc\u06a9'}
+        style={{ position: 'fixed', bottom: '20px', left: '20px', zIndex: 300 }}
+      >
+        {theme === 'dark' ? '\u2600\ufe0f' : '\ud83c\udf19'}
+      </button>
 
       <Sidebar
         activeTab={activeTab}
@@ -204,22 +166,12 @@ function App() {
 
         {isLoading && !showAlwaysVisible && (
           <div className="app-loading-stacks">
-            <div
-              className="skeleton"
-              style={{ height: '52px', width: '100%', borderRadius: 'var(--radius-md)' }}
-            />
-            <div
-              className="skeleton"
-              style={{ height: '320px', width: '100%', borderRadius: 'var(--radius-lg)' }}
-            />
+            <div className="skeleton" style={{ height: '52px', width: '100%', borderRadius: 'var(--radius-md)' }} />
+            <div className="skeleton" style={{ height: '320px', width: '100%', borderRadius: 'var(--radius-lg)' }} />
           </div>
         )}
 
-        <Suspense
-          fallback={
-            <div className="skeleton" style={{ height: '400px', borderRadius: 'var(--radius-lg)' }} />
-          }
-        >
+        <Suspense fallback={<div className="skeleton" style={{ height: '400px', borderRadius: 'var(--radius-lg)' }} />}>
           {activeTab === 'add' && (
             <AddRecordPanel onSuccess={() => loadInitialData({ silent: true })} />
           )}
@@ -228,21 +180,14 @@ function App() {
         </Suspense>
 
         {dataLoaded && !isLoading && (
-          <Suspense
-            fallback={
-              <div className="skeleton" style={{ height: '400px', borderRadius: 'var(--radius-lg)' }} />
-            }
-          >
+          <Suspense fallback={<div className="skeleton" style={{ height: '400px', borderRadius: 'var(--radius-lg)' }} />}>
             {activeTab === 'dashboard' && (
               <Dashboard records={records} filterOptions={filterOptions} />
             )}
-
             {activeTab === 'data' && (
               <DataTable records={records} onDataChange={loadInitialData} />
             )}
-
             {activeTab === 'report' && <Report records={records} />}
-
             {activeTab === 'analytics' && (
               <AnalyticsDashboard
                 records={records}
