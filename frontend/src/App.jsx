@@ -18,13 +18,13 @@ function App() {
   const [authChecked, setAuthChecked] = useState(false);
   const role = localStorage.getItem('role') || 'user';
 
-  const [activeTab, setActiveTab]         = useState('dashboard');
-  const [records, setRecords]             = useState([]);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [records, setRecords] = useState([]);
   const [filterOptions, setFilterOptions] = useState(null);
-  const [quickStats, setQuickStats]       = useState({ total: 0, cold: 0, hot: 0 });
-  const [isLoading, setIsLoading]         = useState(false);
-  const [dataLoaded, setDataLoaded]       = useState(false);
-  const [showAddModal, setShowAddModal]   = useState(false);
+  const [quickStats, setQuickStats] = useState({ total: 0, cold: 0, hot: 0 });
+  const [isLoading, setIsLoading] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [analyticsFilters, setAnalyticsFilters] = useState({});
 
   useEffect(() => {
@@ -35,6 +35,7 @@ function App() {
         setAuthChecked(true);
         return;
       }
+
       try {
         await api.get('/users/me');
         setIsLoggedIn(true);
@@ -47,6 +48,7 @@ function App() {
         setAuthChecked(true);
       }
     };
+
     verifyToken();
   }, []);
 
@@ -56,32 +58,37 @@ function App() {
       setDataLoaded(false);
       setRecords([]);
     };
+
     window.addEventListener('auth-error', handleAuthError);
     return () => window.removeEventListener('auth-error', handleAuthError);
   }, []);
 
-  const loadInitialData = useCallback(async () => {
-    setIsLoading(true);
+  const loadInitialData = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setIsLoading(true);
+
     try {
-      const qsRes  = await api.get('/quick-stats').then(r => r.data);
+      const qsRes = await api.get('/quick-stats').then(r => r.data);
       setQuickStats(qsRes);
+
       const recRes = await getRecords(0, 10000);
       setRecords(recRes.data);
-      // dataLoaded را true می‌گذاریم حتی اگر هیچ رکوردی نباشد (بعد از اولین لود)
+
       setDataLoaded(true);
+
       const optRes = await getFilterOptions();
       setFilterOptions(optRes.data);
     } catch (err) {
       console.error('خطا در بارگذاری:', err);
-      // حتی در صورت خطا، dataLoaded را true کن تا فرم‌ها نمایش داده شوند
       setDataLoaded(true);
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (isLoggedIn) loadInitialData();
+    if (isLoggedIn) {
+      loadInitialData();
+    }
   }, [isLoggedIn, loadInitialData]);
 
   const handleUpload = async (file) => {
@@ -98,7 +105,11 @@ function App() {
     }
   };
 
-  const handleLogin  = () => { setIsLoggedIn(true); setAuthChecked(true); };
+  const handleLogin = () => {
+    setIsLoggedIn(true);
+    setAuthChecked(true);
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
@@ -115,36 +126,45 @@ function App() {
   useEffect(() => {
     const canvas = document.getElementById('space-canvas');
     if (!canvas) return;
+
     const ctx = canvas.getContext('2d');
     let animationId;
 
     const resize = () => {
-      canvas.width  = window.innerWidth;
+      canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     };
+
     resize();
     window.addEventListener('resize', resize);
 
     const stars = Array.from({ length: 160 }, () => ({
-      x:       Math.random() * canvas.width,
-      y:       Math.random() * canvas.height,
-      r:       Math.random() * 1.8,
-      speed:   Math.random() * 0.45 + 0.15,
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: Math.random() * 1.8,
+      speed: Math.random() * 0.45 + 0.15,
       opacity: Math.random() * 0.75 + 0.2,
     }));
 
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+
       stars.forEach(s => {
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(255,255,255,${s.opacity})`;
         ctx.fill();
+
         s.y += s.speed;
-        if (s.y > canvas.height) { s.y = 0; s.x = Math.random() * canvas.width; }
+        if (s.y > canvas.height) {
+          s.y = 0;
+          s.x = Math.random() * canvas.width;
+        }
       });
+
       animationId = requestAnimationFrame(animate);
     };
+
     animate();
 
     return () => {
@@ -163,7 +183,6 @@ function App() {
 
   if (!isLoggedIn) return <Login onLogin={handleLogin} />;
 
-  // تب‌هایی که نیازی به dataLoaded ندارند و همیشه باید نمایش داده شوند
   const alwaysVisibleTabs = ['add', 'users', 'towers'];
   const showAlwaysVisible = alwaysVisibleTabs.includes(activeTab);
 
@@ -179,33 +198,51 @@ function App() {
       />
 
       <main className="app-main">
-        {/* نمایش آپلودر فقط اگر داده‌ای نیست و روی تب داده‌محور هستیم */}
         {!dataLoaded && !isLoading && !showAlwaysVisible && (
           <ExcelUploader onUpload={handleUpload} />
         )}
 
-        {isLoading && (
+        {isLoading && !showAlwaysVisible && (
           <div className="app-loading-stacks">
-            <div className="skeleton" style={{ height: '52px', width: '100%', borderRadius: 'var(--radius-md)' }} />
-            <div className="skeleton" style={{ height: '320px', width: '100%', borderRadius: 'var(--radius-lg)' }} />
+            <div
+              className="skeleton"
+              style={{ height: '52px', width: '100%', borderRadius: 'var(--radius-md)' }}
+            />
+            <div
+              className="skeleton"
+              style={{ height: '320px', width: '100%', borderRadius: 'var(--radius-lg)' }}
+            />
           </div>
         )}
 
-        {/* تب‌هایی که همیشه نمایش داده می‌شوند صرف نظر از dataLoaded */}
-        {!isLoading && (
-          <Suspense fallback={<div className="skeleton" style={{ height: '400px', borderRadius: 'var(--radius-lg)' }} />}>
-            {activeTab === 'add'   && <AddRecordPanel onSuccess={loadInitialData} />}
-            {activeTab === 'towers' && <TowerManagement />}
-            {activeTab === 'users'  && <UserManagement />}
-          </Suspense>
-        )}
+        <Suspense
+          fallback={
+            <div className="skeleton" style={{ height: '400px', borderRadius: 'var(--radius-lg)' }} />
+          }
+        >
+          {activeTab === 'add' && (
+            <AddRecordPanel onSuccess={() => loadInitialData({ silent: true })} />
+          )}
+          {activeTab === 'towers' && <TowerManagement />}
+          {activeTab === 'users' && <UserManagement />}
+        </Suspense>
 
-        {/* تب‌هایی که به داده نیاز دارند */}
         {dataLoaded && !isLoading && (
-          <Suspense fallback={<div className="skeleton" style={{ height: '400px', borderRadius: 'var(--radius-lg)' }} />}>
-            {activeTab === 'dashboard' && <Dashboard records={records} filterOptions={filterOptions} />}
-            {activeTab === 'data'      && <DataTable records={records} onDataChange={loadInitialData} />}
-            {activeTab === 'report'    && <Report records={records} />}
+          <Suspense
+            fallback={
+              <div className="skeleton" style={{ height: '400px', borderRadius: 'var(--radius-lg)' }} />
+            }
+          >
+            {activeTab === 'dashboard' && (
+              <Dashboard records={records} filterOptions={filterOptions} />
+            )}
+
+            {activeTab === 'data' && (
+              <DataTable records={records} onDataChange={loadInitialData} />
+            )}
+
+            {activeTab === 'report' && <Report records={records} />}
+
             {activeTab === 'analytics' && (
               <AnalyticsDashboard
                 records={records}
