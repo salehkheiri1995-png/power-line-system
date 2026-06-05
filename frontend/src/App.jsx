@@ -8,6 +8,7 @@ import AnalyticsDashboard from './components/Analytics/AnalyticsDashboard';
 import TowerManagement from './components/TowerManagement/TowerManagement';
 import UserManagement from './components/UserManagement/UserManagement';
 import Sidebar from './components/Sidebar';
+import GridManagement from './components/GridManagement';
 
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const DataTable  = lazy(() => import('./components/DataTable'));
@@ -141,12 +142,11 @@ function App() {
 
   if (!isLoggedIn) return <Login onLogin={handleLogin} />;
 
-  const alwaysVisibleTabs = ['add', 'users', 'towers'];
+  const alwaysVisibleTabs = ['add', 'users', 'towers', 'grid'];
   const showAlwaysVisible = alwaysVisibleTabs.includes(activeTab);
 
   return (
     <div className="app-root">
-      {/* دکمه تغییر تم — گوشه پایین چپ، دور از دکمه‌های sidebar */}
       <button
         className="theme-toggle"
         onClick={toggleTheme}
@@ -187,6 +187,7 @@ function App() {
           )}
           {activeTab === 'towers' && <TowerManagement />}
           {activeTab === 'users' && <UserManagement />}
+          {activeTab === 'grid' && <GridManagement />}
         </Suspense>
 
         {dataLoaded && !isLoading && (

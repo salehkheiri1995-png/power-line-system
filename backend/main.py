@@ -5,6 +5,7 @@ from routers.items import router as items_router
 from routers.auth import router as auth_router
 from routers.lines_towers import router as lines_towers_router
 from routers.analytics import router as analytics_router
+from routers.grid import router as grid_router
 from database import engine, Base, SessionLocal
 from models import User
 from auth import get_password_hash
@@ -23,6 +24,7 @@ app.include_router(items_router)
 app.include_router(lines_towers_router)
 app.include_router(auth_router)
 app.include_router(analytics_router)
+app.include_router(grid_router)
 
 # ایجاد جداول و کاربر پیش‌فرض
 Base.metadata.create_all(bind=engine)

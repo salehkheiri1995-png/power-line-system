@@ -87,7 +87,7 @@ export const getTrendData = () => api.get('/analytics/trend');
 export const getHeatmapData = () => api.get('/analytics/heatmap');
 export const getCorrelationData = () => api.get('/analytics/correlation');
 
-// ----- مدیریت خطوط و دکل‌ها -----
+// ----- مدیریت خطوط و دکل‌ها (قدیمی) -----
 export const getLines = () => api.get('/lines-towers/lines');
 export const getTowers = (lineId = '') =>
   api.get(`/lines-towers/towers${lineId ? `?line_id=${lineId}` : ''}`);
@@ -115,6 +115,58 @@ export const getUsers = () => api.get('/users');
 export const createUserAdmin = (data) => api.post('/users', data);
 export const updateUserAdmin = (id, data) => api.put(`/users/${id}`, data);
 export const deleteUserAdmin = (id) => api.delete(`/users/${id}`);
+
+// ----- سرویس‌های جدید Grid (خط، دکل، مقره، هادی، یراق، ارت، دهانه، بازرسی) -----
+export const getGridLines = () => api.get('/grid/lines');
+export const createGridLine = (data) => api.post('/grid/lines', data);
+export const updateGridLine = (id, data) => api.put(`/grid/lines/${id}`, data);
+export const deleteGridLine = (id) => api.delete(`/grid/lines/${id}`);
+
+export const getGridTowers = (lineId = '') =>
+  api.get(`/grid/towers${lineId ? `?line_id=${lineId}` : ''}`);
+export const createGridTower = (data) => api.post('/grid/towers', data);
+export const updateGridTower = (id, data) => api.put(`/grid/towers/${id}`, data);
+export const deleteGridTower = (id) => api.delete(`/grid/towers/${id}`);
+
+export const getInsulators = (towerId = '') =>
+  api.get(`/grid/insulators${towerId ? `?tower_id=${towerId}` : ''}`);
+export const createInsulator = (data) => api.post('/grid/insulators', data);
+export const updateInsulator = (id, data) => api.put(`/grid/insulators/${id}`, data);
+export const deleteInsulator = (id) => api.delete(`/grid/insulators/${id}`);
+
+export const getConductors = (towerId = '') =>
+  api.get(`/grid/conductors${towerId ? `?tower_id=${towerId}` : ''}`);
+export const createConductor = (data) => api.post('/grid/conductors', data);
+export const updateConductor = (id, data) => api.put(`/grid/conductors/${id}`, data);
+export const deleteConductor = (id) => api.delete(`/grid/conductors/${id}`);
+
+export const getFittings = (towerId = '') =>
+  api.get(`/grid/fittings${towerId ? `?tower_id=${towerId}` : ''}`);
+export const createFitting = (data) => api.post('/grid/fittings', data);
+export const updateFitting = (id, data) => api.put(`/grid/fittings/${id}`, data);
+export const deleteFitting = (id) => api.delete(`/grid/fittings/${id}`);
+
+export const getGroundings = () => api.get('/grid/groundings');
+export const createGrounding = (data) => api.post('/grid/groundings', data);
+export const updateGrounding = (id, data) => api.put(`/grid/groundings/${id}`, data);
+export const deleteGrounding = (id) => api.delete(`/grid/groundings/${id}`);
+
+export const getSpans = (lineId = '') =>
+  api.get(`/grid/spans${lineId ? `?line_id=${lineId}` : ''}`);
+export const createSpan = (data) => api.post('/grid/spans', data);
+export const updateSpan = (id, data) => api.put(`/grid/spans/${id}`, data);
+export const deleteSpan = (id) => api.delete(`/grid/spans/${id}`);
+
+export const getInspections = (lineId = '', towerId = '') => {
+  const params = [];
+  if (lineId) params.push(`line_id=${encodeURIComponent(lineId)}`);
+  if (towerId) params.push(`tower_id=${encodeURIComponent(towerId)}`);
+  const qs = params.length ? `?${params.join('&')}` : '';
+  return api.get(`/grid/inspections${qs}`);
+};
+export const createInspection = (data) => api.post('/grid/inspections', data);
+export const updateInspection = (id, data) => api.put(`/grid/inspections/${id}`, data);
+export const deleteInspection = (id) => api.delete(`/grid/inspections/${id}`);
 
 export { api };
 export default api;
