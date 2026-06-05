@@ -40,7 +40,6 @@ function TowerTree({ lines, towers, selectedLineId, selectedTowerId, onSelectLin
 
           return (
             <div key={line.id} style={{ marginBottom: 6 }}>
-              {/* ─── row خط ─── */}
               <div style={{
                 display: 'flex', alignItems: 'center',
                 borderRadius: 8,
@@ -49,10 +48,8 @@ function TowerTree({ lines, towers, selectedLineId, selectedTowerId, onSelectLin
                 transition: 'all .15s',
                 overflow: 'hidden',
               }}>
-                {/* نوار رنگ سمت راست */}
                 <div style={{ width: 3, alignSelf: 'stretch', background: line.color_hex || '#3b82f6', flexShrink: 0 }} />
 
-                {/* متن ردیف خط */}
                 <div
                   onClick={() => onSelectLine(line.id)}
                   style={{ flex: 1, padding: '9px 10px', cursor: 'pointer', minWidth: 0 }}
@@ -66,25 +63,23 @@ function TowerTree({ lines, towers, selectedLineId, selectedTowerId, onSelectLin
                   </div>
                 </div>
 
-                {/* دکمه دیدن مشخصات */}
                 <button
                   onClick={(e) => openLineDrawer(e, line)}
                   title="مشخصات خط"
                   style={{
                     background: 'none', border: 'none',
                     color: '#64748b', cursor: 'pointer',
-                    padding: '6px 10px', fontSize: 14,
+                    padding: '6px 10px', fontSize: 15,
                     flexShrink: 0,
                     transition: 'color .15s',
                   }}
                   onMouseEnter={e => e.currentTarget.style.color = '#3b82f6'}
                   onMouseLeave={e => e.currentTarget.style.color = '#64748b'}
                 >
-                  \ud83d\udc41
+                  👁
                 </button>
               </div>
 
-              {/* ─── دکل‌های خط ─── */}
               {isLineSelected && (
                 <div style={{ paddingRight: 10, marginTop: 2 }}>
                   {lineTowers.map(t => {
@@ -126,20 +121,19 @@ function TowerTree({ lines, towers, selectedLineId, selectedTowerId, onSelectLin
                           )}
                         </div>
 
-                        {/* دکمه دیدن مشخصات دکل */}
                         <button
                           onClick={(e) => openTowerDrawer(e, t)}
                           title="مشخصات دکل"
                           style={{
                             background: 'none', border: 'none',
                             color: '#64748b', cursor: 'pointer',
-                            padding: '5px 8px', fontSize: 12,
+                            padding: '5px 8px', fontSize: 14,
                             flexShrink: 0, transition: 'color .15s',
                           }}
                           onMouseEnter={e => e.currentTarget.style.color = '#60a5fa'}
                           onMouseLeave={e => e.currentTarget.style.color = '#64748b'}
                         >
-                          \ud83d\udc41
+                          👁
                         </button>
                       </div>
                     );
