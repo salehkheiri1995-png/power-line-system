@@ -42,6 +42,18 @@ class TowerSchema(BaseModel):
     height: float = 40
     last_maintenance: Optional[str] = None
     next_maintenance: Optional[str] = None
+    # فیلدهای GPS
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+    class Config:
+        from_attributes = True
+
+
+class TowerGpsUpdate(BaseModel):
+    """فقط برای آپدیت GPS دکل استفاده می‌شود"""
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
     class Config:
         from_attributes = True
@@ -214,6 +226,26 @@ def create_tower(
     db.add(db_tower)
     db.commit()
     return db_tower
+
+
+@router.put("/towers/{tower_id}/gps", response_model=TowerSchema)
+def update_tower_gps(
+    tower_id: str,
+    gps: TowerGpsUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """آپدیت lat/lng دکل – کاربر عادی هم مجاز است"""
+    tower = db.query(Tower).filter(Tower.id == tower_id).first()
+    if not tower:
+        raise HTTPException(status_code=404, detail="دکل یافت نشد")
+    if gps.latitude is not None:
+        tower.latitude = gps.latitude
+    if gps.longitude is not None:
+        tower.longitude = gps.longitude
+    db.commit()
+    db.refresh(tower)
+    return tower
 
 
 # ========== Maintenance Records ==========
@@ -412,7 +444,7 @@ def import_from_records(
         for f in ['tower_number', 'tower_number2']:
             val = getattr(rec, f, None)
             if val:
-                for part in str(val).replace(';', ',').replace('،', ',').split(','):
+                for part in str(val).replace(';', ',').replace('\u060c', ',').split(','):
                     part = part.strip()
                     if part.isdigit():
                         tower_nums.add(int(part))
@@ -431,9 +463,7 @@ def import_from_records(
                         description=rec.work_description or "",
                         supervisor=rec.supervisor or "",
                         crew=str(rec.team_count) if rec.team_count else "",
-                        personnel=str(rec.personnel_count)
-                        if rec.personnel_count
-                        else "",
+                        personnel=str(rec.personnel_count) if rec.personnel_count else "",
                         location=rec.location or "",
                         status="completed",
                     )
@@ -448,13 +478,11 @@ def import_from_records(
 
 
 # ========== Complete Plans ==========
-# ✅ تغییر اساسی: get_current_admin_user حذف شد و جای آن get_current_user گذاشته شد
-# این باعث می‌شد کاربران عادی (user) هم بتوانند اطلاعات ثبت کنند
 @router.post("/complete-plans")
 def complete_plans(
     plan_ids: List[str],
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),  # <-- اصلاح شد
+    current_user: User = Depends(get_current_user),
 ):
     for pid in plan_ids:
         task = db.query(PlannedTask).filter(PlannedTask.id == pid).first()
@@ -480,6 +508,7 @@ def complete_plans(
 
 
 def layout_towers(db):
+    """فقط دکل‌هایی که GPS ندارن رو layout می‌کنه"""
     lines = db.query(Line).all()
     paths = [
         [60, 60, 840, 490],
@@ -500,9 +529,17 @@ def layout_towers(db):
             continue
         path = paths[idx % len(paths)]
         for i, tower in enumerate(towers):
-            factor = i / (len(towers) - 1) if len(towers) > 1 else 0
-            tower.x = round(path[0] + factor * (path[2] - path[0]))
-            tower.y = round(path[1] + factor * (path[3] - path[1]))
+            # اگه GPS واقعی داره، x/y رو هم از روی lat/lng بپر
+            if tower.latitude and tower.longitude and tower.latitude != 0:
+                # تبدیل معکوس GPS به x/y برای سازگاری با کد قدیمی
+                BOUNDS_LAT_MIN, BOUNDS_LAT_MAX = 36.5, 39.5
+                BOUNDS_LNG_MIN, BOUNDS_LNG_MAX = 45.5, 48.5
+                tower.x = round((tower.longitude - BOUNDS_LNG_MIN) / (BOUNDS_LNG_MAX - BOUNDS_LNG_MIN) * 900)
+                tower.y = round((tower.latitude - BOUNDS_LAT_MIN) / (BOUNDS_LAT_MAX - BOUNDS_LAT_MIN) * 550)
+            else:
+                factor = i / (len(towers) - 1) if len(towers) > 1 else 0
+                tower.x = round(path[0] + factor * (path[2] - path[0]))
+                tower.y = round(path[1] + factor * (path[3] - path[1]))
 
 
 # ========== Stats & Utility ==========
