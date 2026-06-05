@@ -8,13 +8,14 @@ Usage (from the backend/ directory):
     python migrate_grid.py
 
 It is safe to run multiple times – every ALTER TABLE is wrapped in a
-try/except that silently ignores "duplicate column" errors.
+check that silently skips already-existing columns/tables.
 """
 
 import sqlite3
 import os
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "power_lines.db")
+# نام واقعی دیتابیس طبق database.py
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "power_line.db")
 
 
 def col_exists(cursor, table: str, column: str) -> bool:
@@ -52,7 +53,7 @@ def migrate(conn: sqlite3.Connection):
         ("number_of_circuits",      "INTEGER", None),
         ("source_substation",       "TEXT",    None),
         ("destination_substation",  "TEXT",    None),
-        ("commissioning_date",      "TEXT",    None),   # stored as ISO date string
+        ("commissioning_date",      "TEXT",    None),
         ("line_status",             "TEXT",    None),
         ("last_inspection_date",    "TEXT",    None),
         ("max_transfer_mw",         "INTEGER", None),
@@ -64,47 +65,43 @@ def migrate(conn: sqlite3.Connection):
 
     print("\n=== Migrating table: towers ===")
     tower_cols = [
-        ("tower_code",              "TEXT",    None),
-        ("tower_type",              "TEXT",    "'Suspension'"),
-        ("material",                "TEXT",    None),
-        ("height_meters",           "REAL",    None),
-        ("arm_width_meters",        "REAL",    None),
-        ("latitude",                "REAL",    None),
-        ("longitude",               "REAL",    None),
-        ("altitude_meters",         "REAL",    None),
-        ("foundation_type",         "TEXT",    None),
-        ("foundation_depth_meters", "REAL",    None),
-        ("foundation_date",         "TEXT",    None),
-        ("anti_climbing_device",    "INTEGER", "0"),    # BOOLEAN → INTEGER in SQLite
-        ("warning_sign",            "INTEGER", "0"),
-        ("bird_nest_status",        "TEXT",    None),
-        ("last_inspection_date",    "TEXT",    None),
-        ("inspection_report",       "TEXT",    None),
-        ("photos",                  "TEXT",    None),
-        ("grounding_resistance_ohm","REAL",    None),
-        ("grounding_rod_count",     "INTEGER", None),
-        ("last_grounding_test_date","TEXT",    None),
+        ("tower_code",               "TEXT",    None),
+        ("tower_type",               "TEXT",    "'Suspension'"),
+        ("material",                 "TEXT",    None),
+        ("height_meters",            "REAL",    None),
+        ("arm_width_meters",         "REAL",    None),
+        ("latitude",                 "REAL",    None),
+        ("longitude",                "REAL",    None),
+        ("altitude_meters",          "REAL",    None),
+        ("foundation_type",          "TEXT",    None),
+        ("foundation_depth_meters",  "REAL",    None),
+        ("foundation_date",          "TEXT",    None),
+        ("anti_climbing_device",     "INTEGER", "0"),
+        ("warning_sign",             "INTEGER", "0"),
+        ("bird_nest_status",         "TEXT",    None),
+        ("last_inspection_date",     "TEXT",    None),
+        ("inspection_report",        "TEXT",    None),
+        ("photos",                   "TEXT",    None),
+        ("grounding_resistance_ohm", "REAL",    None),
+        ("grounding_rod_count",      "INTEGER", None),
+        ("last_grounding_test_date", "TEXT",    None),
     ]
     for col, typ, dflt in tower_cols:
         add_column(cur, "towers", col, typ, dflt)
-
-    # ------------------------------------------------------------------ #
-    # New tables                                                           #
-    # ------------------------------------------------------------------ #
 
     print("\n=== Creating table: insulators ===")
     if not table_exists(cur, "insulators"):
         cur.execute("""
             CREATE TABLE insulators (
-                id                INTEGER PRIMARY KEY AUTOINCREMENT,
-                tower_id          TEXT    NOT NULL REFERENCES towers(id),
-                phase_position    TEXT,
-                insulator_type    TEXT,
-                material          TEXT,
-                number_of_discs   INTEGER,
+                id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                tower_id            TEXT    NOT NULL REFERENCES towers(id),
+                phase_position      TEXT,
+                insulator_type      TEXT,
+                material            TEXT,
+                number_of_discs     INTEGER,
                 mechanical_class_kn INTEGER,
-                condition         TEXT,
-                installation_date TEXT
+                condition           TEXT,
+                installation_date   TEXT
             )
         """)
         print("  [created] insulators")
@@ -115,15 +112,15 @@ def migrate(conn: sqlite3.Connection):
     if not table_exists(cur, "conductors"):
         cur.execute("""
             CREATE TABLE conductors (
-                id                 INTEGER PRIMARY KEY AUTOINCREMENT,
-                tower_id           TEXT    NOT NULL REFERENCES towers(id),
-                phase_number       INTEGER,
-                conductor_type     TEXT,
-                cross_section_mm2  INTEGER,
-                strand_count       INTEGER,
-                tension_kgf        REAL,
-                sag_mm             REAL,
-                clamp_type         TEXT
+                id                INTEGER PRIMARY KEY AUTOINCREMENT,
+                tower_id          TEXT    NOT NULL REFERENCES towers(id),
+                phase_number      INTEGER,
+                conductor_type    TEXT,
+                cross_section_mm2 INTEGER,
+                strand_count      INTEGER,
+                tension_kgf       REAL,
+                sag_mm            REAL,
+                clamp_type        TEXT
             )
         """)
         print("  [created] conductors")
@@ -173,7 +170,7 @@ def migrate(conn: sqlite3.Connection):
                 from_tower_id               TEXT    NOT NULL REFERENCES towers(id),
                 to_tower_id                 TEXT    NOT NULL REFERENCES towers(id),
                 span_length_meters          REAL,
-                terrain_type               TEXT,
+                terrain_type                TEXT,
                 min_ground_clearance_meters REAL,
                 mid_span_damper_count       INTEGER
             )
