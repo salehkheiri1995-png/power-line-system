@@ -22,32 +22,46 @@ function schematicToLatLng(x, y) {
   return { lat, lng };
 }
 
-function towerIcon(isSelected, isUrgent) {
-  const size = isSelected ? 20 : 14;
+// اگه GPS واقعی داره از اون استفاده کن، وگرنه از تبدیل شماتیک
+function towerPosition(tower) {
+  if (
+    tower.latitude != null && tower.longitude != null &&
+    tower.latitude !== 0 && tower.longitude !== 0
+  ) {
+    return { lat: tower.latitude, lng: tower.longitude, isGps: true };
+  }
+  const pos = schematicToLatLng(tower.x ?? 0, tower.y ?? 0);
+  return { ...pos, isGps: false };
+}
+
+function towerIcon(isSelected, isUrgent, isGps) {
+  const size = isSelected ? 22 : 15;
   const cls = isSelected ? 'selected' : isUrgent ? 'urgent' : 'normal';
+  // دکل‌هایی که GPS واقعی دارن یه حلقه سبز کوچیک زیرشون نشون میده
+  const gpsDot = isGps
+    ? `<div style="position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);
+         width:6px;height:6px;border-radius:50%;background:#4ade80;
+         border:1px solid #166534;"></div>`
+    : '';
 
   return L.divIcon({
     className: 'tower-marker',
-    html: `<div class="tower-icon-html ${cls}" style="width:${size}px;height:${size}px;">⚡</div>`,
-    iconSize: [size, size],
+    html: `<div class="tower-icon-html ${cls}" style="width:${size}px;height:${size}px;position:relative;">⚡${gpsDot}</div>`,
+    iconSize: [size, size + 6],
     iconAnchor: [size / 2, size / 2],
-    popupAnchor: [0, -10],
+    popupAnchor: [0, -12],
   });
 }
 
 function FlyToSelected({ towerId, towers }) {
   const map = useMap();
-
   useEffect(() => {
-    if (towerId) {
-      const tower = towers.find((t) => t.id === towerId);
-      if (tower) {
-        const pos = schematicToLatLng(tower.x, tower.y);
-        map.flyTo([pos.lat, pos.lng], 12, { duration: 1 });
-      }
-    }
+    if (!towerId) return;
+    const tower = towers.find((t) => t.id === towerId);
+    if (!tower) return;
+    const pos = towerPosition(tower);
+    map.flyTo([pos.lat, pos.lng], pos.isGps ? 14 : 12, { duration: 1 });
   }, [towerId, towers, map]);
-
   return null;
 }
 
@@ -82,7 +96,6 @@ function TowerManagement() {
         api.get('/lines-towers/maintenance-records'),
         api.get('/lines-towers/planned-tasks'),
       ]);
-
       setLines(linesRes.data);
       setTowers(towersRes.data);
       setMaintenanceRecords(recsRes.data);
@@ -92,9 +105,7 @@ function TowerManagement() {
     }
   }, []);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  useEffect(() => { loadData(); }, [loadData]);
 
   const handleImport = async () => {
     await api.post('/lines-towers/import-from-records');
@@ -111,43 +122,30 @@ function TowerManagement() {
 
   const filteredTowers = useMemo(() => {
     let result = towers;
-
-    if (filters.lineName) {
+    if (filters.lineName)
       result = result.filter((t) => t.line_id === filters.lineName);
-    }
-
     if (filters.voltage) {
-      const lineIdsWithVoltage = lines
-        .filter((l) => l.voltage === parseInt(filters.voltage))
-        .map((l) => l.id);
-
-      result = result.filter((t) => lineIdsWithVoltage.includes(t.line_id));
+      const lineIds = lines.filter((l) => l.voltage === parseInt(filters.voltage)).map((l) => l.id);
+      result = result.filter((t) => lineIds.includes(t.line_id));
     }
-
     if (filters.location) {
-      const towerIdsWithLocation = maintenanceRecords
-        .filter((rec) => rec.location === filters.location)
-        .map((rec) => rec.tower_id);
-
-      result = result.filter((t) => towerIdsWithLocation.includes(t.id));
+      const towerIds = maintenanceRecords.filter((r) => r.location === filters.location).map((r) => r.tower_id);
+      result = result.filter((t) => towerIds.includes(t.id));
     }
-
     if (filters.dateFrom || filters.dateTo) {
       const from = filters.dateFrom ? parseJalaliToDate(filters.dateFrom) : null;
-      const to = filters.dateTo ? parseJalaliToDate(filters.dateTo) : null;
-
+      const to   = filters.dateTo   ? parseJalaliToDate(filters.dateTo)   : null;
       result = result.filter((t) => {
         const recs = maintenanceRecords.filter((r) => r.tower_id === t.id);
         return recs.some((rec) => {
           if (!rec.gregorian_date) return false;
           const d = new Date(rec.gregorian_date);
           if (from && d < from) return false;
-          if (to && d > to) return false;
+          if (to   && d > to)   return false;
           return true;
         });
       });
     }
-
     return result;
   }, [towers, filters, lines, maintenanceRecords]);
 
@@ -158,24 +156,19 @@ function TowerManagement() {
 
   const filteredPlannedTasks = useMemo(() => {
     let result = plannedTasks;
-
-    if (filters.lineName) {
+    if (filters.lineName)
       result = result.filter((p) => p.line_id === filters.lineName);
-    }
-
     if (filters.dateFrom || filters.dateTo) {
       const from = filters.dateFrom ? parseJalaliToDate(filters.dateFrom) : null;
-      const to = filters.dateTo ? parseJalaliToDate(filters.dateTo) : null;
-
+      const to   = filters.dateTo   ? parseJalaliToDate(filters.dateTo)   : null;
       result = result.filter((p) => {
         if (!p.gregorian_date) return false;
         const d = new Date(p.gregorian_date);
         if (from && d < from) return false;
-        if (to && d > to) return false;
+        if (to   && d > to)   return false;
         return true;
       });
     }
-
     return result;
   }, [plannedTasks, filters]);
 
@@ -197,15 +190,9 @@ function TowerManagement() {
     return (next - new Date()) / (1000 * 60 * 60 * 24) <= 30;
   };
 
-  const urgentCount = useMemo(
-    () => filteredTowers.filter(getTowerUrgency).length,
-    [filteredTowers]
-  );
-
-  const openPlansCount = useMemo(
-    () => filteredPlannedTasks.filter((p) => p.status === 'planned').length,
-    [filteredPlannedTasks]
-  );
+  const urgentCount    = useMemo(() => filteredTowers.filter(getTowerUrgency).length, [filteredTowers]);
+  const openPlansCount = useMemo(() => filteredPlannedTasks.filter((p) => p.status === 'planned').length, [filteredPlannedTasks]);
+  const gpsCount       = useMemo(() => towers.filter((t) => t.latitude && t.longitude && t.latitude !== 0).length, [towers]);
 
   return (
     <div className="tm-root">
@@ -216,6 +203,11 @@ function TowerManagement() {
             <h2 className="tm-header-title">مدیریت خطوط و دکل‌ها</h2>
             <p className="tm-header-sub">
               {lines.length} خط | {towers.length} دکل
+              {gpsCount > 0 && (
+                <span style={{ marginRight: 8, color: '#4ade80', fontSize: 11 }}>
+                  📍 {gpsCount} دکل GPS واقعی
+                </span>
+              )}
             </p>
           </div>
         </div>
@@ -224,11 +216,9 @@ function TowerManagement() {
           <button className="btn-glow btn-sm" onClick={handleImport} title="بارگذاری از رکوردها">
             🔄 بارگذاری
           </button>
-
           <button className="btn-glow btn-blue btn-sm" onClick={() => setShowLineModal(true)}>
             ➕ خط جدید
           </button>
-
           <button
             className="btn-glow btn-amber btn-sm"
             onClick={async () => {
@@ -242,18 +232,11 @@ function TowerManagement() {
       </div>
 
       <div className="tm-tab-bar">
-        <button
-          className={`tm-tab ${activeTab === 'map' ? 'active' : ''}`}
-          onClick={() => setActiveTab('map')}
-        >
+        <button className={`tm-tab ${activeTab === 'map' ? 'active' : ''}`} onClick={() => setActiveTab('map')}>
           <span className="tm-tab-icon">🗺️</span>
           نقشه و درخت خطوط
         </button>
-
-        <button
-          className={`tm-tab ${activeTab === 'reports' ? 'active' : ''}`}
-          onClick={() => setActiveTab('reports')}
-        >
+        <button className={`tm-tab ${activeTab === 'reports' ? 'active' : ''}`} onClick={() => setActiveTab('reports')}>
           <span className="tm-tab-icon">📋</span>
           گزارش‌ها و برنامه‌ها
           {(urgentCount + openPlansCount) > 0 && (
@@ -267,6 +250,18 @@ function TowerManagement() {
           <div className="tm-map-toolbar">
             <TowerFilterPanel lines={lines} onFilter={setFilters} compact />
           </div>
+
+          {/* راهنمای GPS */}
+          {gpsCount > 0 && (
+            <div style={{
+              display: 'flex', gap: 16, padding: '6px 14px',
+              background: 'rgba(74,222,128,0.07)', borderBottom: '1px solid rgba(74,222,128,0.15)',
+              fontSize: 12, color: '#86efac', alignItems: 'center',
+            }}>
+              <span>📍 دکل‌های با نقطه سبز = GPS واقعی</span>
+              <span style={{ color: '#64748b' }}>دکل‌های بدون نقطه = موقعیت تقریبی</span>
+            </div>
+          )}
 
           <div className="tm-map-shell">
             <div className="tm-map-main">
@@ -285,21 +280,27 @@ function TowerManagement() {
                   <FlyToSelected towerId={selectedTowerId} towers={filteredTowers} />
 
                   {filteredTowers.map((tower) => {
-                    const pos = schematicToLatLng(tower.x, tower.y);
+                    const pos      = towerPosition(tower);
                     const isSelected = selectedTowerId === tower.id;
-                    const isUrgent = getTowerUrgency(tower);
+                    const isUrgent   = getTowerUrgency(tower);
+                    const line       = lines.find((l) => l.id === tower.line_id);
 
                     return (
                       <Marker
                         key={tower.id}
                         position={[pos.lat, pos.lng]}
-                        icon={towerIcon(isSelected, isUrgent)}
+                        icon={towerIcon(isSelected, isUrgent, pos.isGps)}
                         eventHandlers={{ click: () => handleSelectTower(tower.id) }}
                       >
                         <Popup>
                           <div className="tower-popup-content">
                             <strong>🗼 دکل {tower.number}</strong>
-                            <span>خط: {lines.find((l) => l.id === tower.line_id)?.name}</span>
+                            <span>خط: {line?.name || tower.line_id}</span>
+                            <span style={{ color: pos.isGps ? '#16a34a' : '#92400e', fontWeight: 600 }}>
+                              {pos.isGps
+                                ? `📍 GPS: ${Number(tower.latitude).toFixed(5)}, ${Number(tower.longitude).toFixed(5)}`
+                                : '⚠️ موقعیت تقریبی (بدون GPS)'}
+                            </span>
                             <span>آخرین تعمیر: {tower.last_maintenance || '—'}</span>
                             <span>موعد بعدی: {tower.next_maintenance || '—'}</span>
                           </div>
@@ -318,7 +319,6 @@ function TowerManagement() {
                 <div className="tm-side-header">
                   <span>🔍 جزئیات کامل دکل / خط</span>
                 </div>
-
                 <div className="tm-side-scroll tm-detail-scroll">
                   <TowerDetail
                     selectedLineId={selectedLineId}
@@ -343,7 +343,6 @@ function TowerManagement() {
                   <span>📡 خطوط و دکل‌ها</span>
                   <span className="tm-side-count">{filteredTowers.length}</span>
                 </div>
-
                 <div className="tm-side-scroll">
                   <TowerTree
                     lines={filteredLines}
@@ -364,13 +363,12 @@ function TowerManagement() {
         <div className="tm-reports-view">
           <div className="tm-kpi-row">
             <div className="tm-kpi-card tm-kpi-primary">
-              <div className="tm-kpi-icon">🗼</div>
+              <div className="tm-kpi-icon">🖼</div>
               <div className="tm-kpi-body">
                 <div className="tm-kpi-val">{towers.length}</div>
                 <div className="tm-kpi-label">کل دکل‌ها</div>
               </div>
             </div>
-
             <div className="tm-kpi-card tm-kpi-warning">
               <div className="tm-kpi-icon">⚠️</div>
               <div className="tm-kpi-body">
@@ -378,7 +376,6 @@ function TowerManagement() {
                 <div className="tm-kpi-label">تعمیر ضروری</div>
               </div>
             </div>
-
             <div className="tm-kpi-card tm-kpi-info">
               <div className="tm-kpi-icon">📅</div>
               <div className="tm-kpi-body">
@@ -386,7 +383,6 @@ function TowerManagement() {
                 <div className="tm-kpi-label">برنامه باز</div>
               </div>
             </div>
-
             <div className="tm-kpi-card tm-kpi-success">
               <div className="tm-kpi-icon">⚡</div>
               <div className="tm-kpi-body">
@@ -401,17 +397,10 @@ function TowerManagement() {
           </div>
 
           <div className="tm-report-switcher">
-            <button
-              className={`tm-report-switch ${reportsTab === 'urgent' ? 'active' : ''}`}
-              onClick={() => setReportsTab('urgent')}
-            >
+            <button className={`tm-report-switch ${reportsTab === 'urgent' ? 'active' : ''}`} onClick={() => setReportsTab('urgent')}>
               ⚠️ تعمیرات ضروری
             </button>
-
-            <button
-              className={`tm-report-switch ${reportsTab === 'planned' ? 'active' : ''}`}
-              onClick={() => setReportsTab('planned')}
-            >
+            <button className={`tm-report-switch ${reportsTab === 'planned' ? 'active' : ''}`} onClick={() => setReportsTab('planned')}>
               📅 برنامه‌ریزی شده
             </button>
           </div>
