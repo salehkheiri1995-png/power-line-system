@@ -1,5 +1,5 @@
 /* ==========================================================
-   DASHBOARD v4 — db-* classes
+   DASHBOARD v5 — db-* classes
    ========================================================== */
 
 .db-root {
@@ -12,7 +12,7 @@
 /* ─── KPI ─── */
 .db-kpi-row {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: var(--space-4);
 }
 .db-kpi-card {
@@ -39,36 +39,20 @@
 .db-kpi-warning .db-kpi-val { color: var(--color-warning); }
 .db-kpi-teams   { border-top: 3px solid #5a6475; }
 .db-kpi-teams .db-kpi-val   { color: #5a6475; }
+.db-kpi-sups    { border-top: 3px solid #8a6200; }
+.db-kpi-sups .db-kpi-val    { color: #8a6200; }
 
 /* ─── Grid ─── */
 .db-charts-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: var(--space-5);
   align-items: start;
 }
 
-/* ۳ ستون = کل عرض */
-.db-chart-wide  { grid-column: span 2; }
-/* نیمه = ۱ ستون */
-.db-chart-half  { grid-column: span 1; }
-
-/* ردیف سه تایی - برای Doughnutها */
-.db-chart-card:nth-child(-n+3) { grid-column: span 1; }
-.db-charts-grid > .db-chart-card:first-child,
-.db-charts-grid > .db-chart-card:nth-child(2),
-.db-charts-grid > .db-chart-card:nth-child(3) {
-  /* ۳ ستونی برای ردیف اول */
-  grid-column: span 1;
-}
-
-/* override: ردیف اول = ۳ ستون */
-.db-charts-grid {
-  grid-template-columns: repeat(6, 1fr);
-}
-.db-chart-card     { grid-column: span 2; }  /* دیفالت: ۱/۳ عرض */
-.db-chart-wide     { grid-column: span 6; }  /* کل عرض */
-.db-chart-half     { grid-column: span 3; }  /* نیمه عرض */
+.db-chart-card { grid-column: span 2; }
+.db-chart-wide { grid-column: span 6; }
+.db-chart-half { grid-column: span 3; }
 
 .db-chart-card {
   background: var(--color-surface);
@@ -88,11 +72,37 @@
 }
 .db-chart-icon  { font-size: 1.05rem; flex-shrink:0; }
 .db-chart-title { font-size: var(--text-sm); font-weight:700; color:var(--color-text); margin:0; }
+.db-chart-hint {
+  font-size: 10px;
+  color: var(--color-primary);
+  background: color-mix(in srgb,var(--color-primary) 10%,transparent);
+  border: 1px solid color-mix(in srgb,var(--color-primary) 25%,transparent);
+  border-radius: var(--radius-full);
+  padding: 2px 8px;
+  margin-right: auto;
+  font-weight: 600;
+  white-space: nowrap;
+}
 
 /* ─── wrapper ارتفاع‌ها ─── */
-.db-chart-wrap      { position:relative; width:100%; height:270px; }   /* Doughnut */
-.db-chart-wrap-md   { position:relative; width:100%; height:260px; }   /* Line/Stacked */
-.db-chart-wrap-tall { position:relative; width:100%; height:320px; }   /* HBar/Bar */
+.db-chart-wrap      { position:relative; width:100%; height:280px; }
+.db-chart-wrap-md   { position:relative; width:100%; height:260px; }
+.db-chart-wrap-tall { position:relative; width:100%; height:320px; }
+
+/* ─── Duo grid — دو نمودار داخل یک کارت ─── */
+.db-duo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+.db-duo-label {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-2) 0;
+  text-align: center;
+}
 
 /* ─── RESPONSIVE ─── */
 @media (max-width: 1300px) {
@@ -110,6 +120,7 @@
   .db-chart-card,
   .db-chart-wide,
   .db-chart-half            { grid-column: span 1; }
+  .db-duo-grid              { grid-template-columns: 1fr; }
   .db-kpi-row               { grid-template-columns: repeat(2,1fr); }
   .db-chart-wrap            { height: 240px; }
   .db-chart-wrap-md         { height: 220px; }

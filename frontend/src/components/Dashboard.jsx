@@ -217,7 +217,7 @@ function Dashboard({ records, filterOptions }) {
 
   const dOpts = (field, labels) => ({
     responsive:true, maintainAspectRatio:false, cutout:'62%', animation:{duration:600},
-    plugins:{legend:LEG('right'), tooltip:TT},
+    plugins:{legend:LEG('bottom'), tooltip:TT},
     onClick:(_,els) => onChartClick(field,els,labels),
   });
 
@@ -273,12 +273,22 @@ function Dashboard({ records, filterOptions }) {
       {D.total > 0 ? (
         <div className="db-charts-grid">
 
-          {/* ردیف A: دو Doughnut (نوع برنامه + ولتاژ) */}
-          <Card title="توزیع نوع برنامه" icon="📋" hint="کلیک‌پذیر" size="half">
-            <div className="db-chart-wrap"><Doughnut data={D.dProg} options={dOpts('program_type',D.ptLabels)} /></div>
-          </Card>
-          <Card title="توزیع سطح ولتاژ" icon="⚡" hint="کلیک‌پذیر" size="half">
-            <div className="db-chart-wrap"><Doughnut data={D.dVolt} options={dOpts('voltage_level',D.vlLabels)} /></div>
+          {/* ردیف A: دو Doughnut داخل یک کارت عریض */}
+          <Card title="توزیع‌های کلی" icon="🧩" size="wide" hint="کلیک‌پذیر">
+            <div className="db-duo-grid">
+              <div>
+                <p className="db-duo-label">📋 نوع برنامه</p>
+                <div className="db-chart-wrap">
+                  <Doughnut data={D.dProg} options={dOpts('program_type',D.ptLabels)} />
+                </div>
+              </div>
+              <div>
+                <p className="db-duo-label">⚡ سطح ولتاژ</p>
+                <div className="db-chart-wrap">
+                  <Doughnut data={D.dVolt} options={dOpts('voltage_level',D.vlLabels)} />
+                </div>
+              </div>
+            </div>
           </Card>
 
           {/* ردیف B: سرپرستان — عریض بزرگ */}
