@@ -1,5 +1,5 @@
 /* ==========================================================
-   DASHBOARD v3 — db-* classes
+   DASHBOARD v4 — db-* classes
    ========================================================== */
 
 .db-root {
@@ -9,17 +9,14 @@
   animation: fadeIn 0.3s ease;
 }
 
-/* ─── KPI row ─── */
+/* ─── KPI ─── */
 .db-kpi-row {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: var(--space-4);
 }
-
 .db-kpi-card {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
+  display: flex; align-items: center; gap: var(--space-3);
   padding: var(--space-4) var(--space-5);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -27,13 +24,10 @@
   box-shadow: var(--shadow-sm);
   transition: box-shadow var(--transition-base), transform var(--transition-base);
 }
-.db-kpi-card:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
-}
-.db-kpi-icon  { font-size: 1.9rem; line-height: 1; flex-shrink: 0; }
-.db-kpi-val   { font-size: var(--text-2xl); font-weight: 700; line-height: 1.1; }
-.db-kpi-label { font-size: var(--text-xs); color: var(--color-text-muted); font-weight: 600; margin-top: 2px; }
+.db-kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.db-kpi-icon  { font-size: 1.9rem; line-height:1; flex-shrink:0; }
+.db-kpi-val   { font-size: var(--text-2xl); font-weight:700; line-height:1.1; }
+.db-kpi-label { font-size: var(--text-xs); color: var(--color-text-muted); font-weight:600; margin-top:2px; }
 
 .db-kpi-primary { border-top: 3px solid var(--color-primary); }
 .db-kpi-primary .db-kpi-val { color: var(--color-primary); }
@@ -46,19 +40,35 @@
 .db-kpi-teams   { border-top: 3px solid #5a6475; }
 .db-kpi-teams .db-kpi-val   { color: #5a6475; }
 
-/* ─── Charts grid ─── */
+/* ─── Grid ─── */
 .db-charts-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--space-5);
   align-items: start;
 }
 
-/* کل عرض (3 ستون) */
-.db-chart-wide { grid-column: span 3; }
+/* ۳ ستون = کل عرض */
+.db-chart-wide  { grid-column: span 2; }
+/* نیمه = ۱ ستون */
+.db-chart-half  { grid-column: span 1; }
 
-/* نیمه عرض (1.5 ستون) */
-.db-chart-half { grid-column: span 1; }
+/* ردیف سه تایی - برای Doughnutها */
+.db-chart-card:nth-child(-n+3) { grid-column: span 1; }
+.db-charts-grid > .db-chart-card:first-child,
+.db-charts-grid > .db-chart-card:nth-child(2),
+.db-charts-grid > .db-chart-card:nth-child(3) {
+  /* ۳ ستونی برای ردیف اول */
+  grid-column: span 1;
+}
+
+/* override: ردیف اول = ۳ ستون */
+.db-charts-grid {
+  grid-template-columns: repeat(6, 1fr);
+}
+.db-chart-card     { grid-column: span 2; }  /* دیفالت: ۱/۳ عرض */
+.db-chart-wide     { grid-column: span 6; }  /* کل عرض */
+.db-chart-half     { grid-column: span 3; }  /* نیمه عرض */
 
 .db-chart-card {
   background: var(--color-surface);
@@ -66,76 +76,45 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
   padding: var(--space-5);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+  display: flex; flex-direction: column; gap: var(--space-3);
   transition: box-shadow var(--transition-base), transform var(--transition-base);
 }
-.db-chart-card:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
-}
+.db-chart-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
 
 .db-chart-head {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
+  display: flex; align-items: center; gap: var(--space-2);
   padding-bottom: var(--space-3);
   border-bottom: 1px solid var(--color-divider);
 }
+.db-chart-icon  { font-size: 1.05rem; flex-shrink:0; }
+.db-chart-title { font-size: var(--text-sm); font-weight:700; color:var(--color-text); margin:0; }
 
-.db-chart-icon { font-size: 1.1rem; flex-shrink: 0; }
+/* ─── wrapper ارتفاع‌ها ─── */
+.db-chart-wrap      { position:relative; width:100%; height:270px; }   /* Doughnut */
+.db-chart-wrap-md   { position:relative; width:100%; height:260px; }   /* Line/Stacked */
+.db-chart-wrap-tall { position:relative; width:100%; height:320px; }   /* HBar/Bar */
 
-.db-chart-title {
-  font-size: var(--text-sm);
-  font-weight: 700;
-  color: var(--color-text);
-  margin: 0;
-}
-
-/* ─── ارتفاع wrapper‌ها — Chart.js نیاز به ارتفاع صریح داره ─── */
-.db-chart-wrap {
-  position: relative;
-  width: 100%;
-  height: 270px;        /* دونات / polar */
-}
-.db-chart-wrap-md {
-  height: 260px;        /* line / stacked / avg */
-}
-.db-chart-wrap-tall {
-  height: 300px;        /* hbar / bar موقعیت */
-}
-
-/* ─── دارک ─── */
-[data-theme="dark"] .db-chart-card {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-}
-
-/* ==========================================================
-   RESPONSIVE
-   ========================================================== */
-
+/* ─── RESPONSIVE ─── */
 @media (max-width: 1300px) {
-  .db-kpi-row { grid-template-columns: repeat(3, 1fr); }
+  .db-kpi-row { grid-template-columns: repeat(3,1fr); }
 }
-
 @media (max-width: 1100px) {
-  .db-charts-grid { grid-template-columns: repeat(2, 1fr); }
-  .db-chart-wide  { grid-column: span 2; }
-  .db-chart-half  { grid-column: span 1; }
-  .db-kpi-row     { grid-template-columns: repeat(3, 1fr); }
+  .db-charts-grid           { grid-template-columns: repeat(4,1fr); }
+  .db-chart-card            { grid-column: span 2; }
+  .db-chart-wide            { grid-column: span 4; }
+  .db-chart-half            { grid-column: span 2; }
+  .db-kpi-row               { grid-template-columns: repeat(3,1fr); }
 }
-
 @media (max-width: 750px) {
-  .db-charts-grid { grid-template-columns: 1fr; }
-  .db-chart-wide, .db-chart-half { grid-column: span 1; }
-  .db-kpi-row     { grid-template-columns: repeat(2, 1fr); }
-  .db-chart-wrap      { height: 240px; }
-  .db-chart-wrap-md   { height: 220px; }
-  .db-chart-wrap-tall { height: 260px; }
+  .db-charts-grid           { grid-template-columns: 1fr; }
+  .db-chart-card,
+  .db-chart-wide,
+  .db-chart-half            { grid-column: span 1; }
+  .db-kpi-row               { grid-template-columns: repeat(2,1fr); }
+  .db-chart-wrap            { height: 240px; }
+  .db-chart-wrap-md         { height: 220px; }
+  .db-chart-wrap-tall       { height: 260px; }
 }
-
 @media (max-width: 480px) {
   .db-kpi-row { grid-template-columns: 1fr 1fr; }
   .db-kpi-val { font-size: var(--text-xl); }
