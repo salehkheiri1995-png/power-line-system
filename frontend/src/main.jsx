@@ -4,6 +4,7 @@ import App from './App'
 import './styles/custom.css'
 import './styles/dashboard.css'
 import './styles/filter-panel.css'
+import './styles/dashboard-modal.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
