@@ -1,78 +1,77 @@
 import React, { useState, useEffect } from 'react';
 import api, { createRecord, getFilterOptions, completePlans } from '../api';
+import './AddRecordPanel.css';
 
-const PERSIAN_MONTHS = [
-  'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
-  'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'
-];
+const YEARS  = Array.from({ length: 11 }, (_, i) => 1396 + i);
+const MONTHS = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+const DAYS   = Array.from({ length: 31 }, (_, i) => i + 1);
+
+const EMPTY_FORM = {
+  program_type: '', code: '', line_name: '', voltage_level: '',
+  work_description: '', tower_number: '', location: '', pm_date: '',
+  execution_date: '', team_count: '', personnel_count: '',
+  supervisor: '', quantity: '', unit: ''
+};
+
+function toJalali(date) {
+  const d = new Date(date);
+  const gy = d.getFullYear(), gm = d.getMonth() + 1, gd = d.getDate();
+  const gdm = [0,31,59,90,120,151,181,212,243,273,304,334];
+  const g_days = gdm[gm-1] + gd + (gm>2 && ((gy%4===0&&gy%100!==0)||(gy%400===0)) ? 1 : 0);
+  const jy = gy - 621;
+  let jDay = g_days - 79;
+  if (jDay <= 186) {
+    const jm = Math.ceil(jDay/31);
+    return { year: jy, month: jm, day: jDay - (jm-1)*31 };
+  }
+  jDay -= 186;
+  const jm = Math.ceil(jDay/30) + 6;
+  return { year: jy, month: jm, day: jDay - (jm-7)*30 };
+}
 
 function AddRecordPanel({ onSuccess }) {
-  const [form, setForm] = useState({
-    program_type: '',
-    code: '',
-    line_name: '',
-    voltage_level: '',
-    work_description: '',
-    tower_number: '',
-    location: '',
-    pm_date: '',
-    execution_date: '',
-    team_count: '',
-    personnel_count: '',
-    supervisor: '',
-    quantity: '',
-    unit: ''
-  });
-
-  const [dateYear, setDateYear] = useState('');
+  const [form, setForm]   = useState(EMPTY_FORM);
+  const [dateYear,  setDateYear]  = useState('');
   const [dateMonth, setDateMonth] = useState('');
-  const [dateDay, setDateDay] = useState('');
+  const [dateDay,   setDateDay]   = useState('');
   const [pmDateText, setPmDateText] = useState('');
 
-  const [lineOptions, setLineOptions] = useState([]);
-  const [descOptions, setDescOptions] = useState([]);
-  const [supervisorOptions, setSupervisorOptions] = useState([]);
+  const [lineOptions, setLineOptions]   = useState([]);
+  const [descOptions, setDescOptions]   = useState([]);
+  const [supOptions,  setSupOptions]    = useState([]);
   const [filteredLines, setFilteredLines] = useState([]);
   const [filteredDescs, setFilteredDescs] = useState([]);
 
-  const [openPlans, setOpenPlans] = useState([]);
-  const [selectedTowerIdsByPlan, setSelectedTowerIdsByPlan] = useState({});
+  const [openPlans,  setOpenPlans]  = useState([]);
+  const [selByPlan,  setSelByPlan]  = useState({});
   const [plansLoading, setPlansLoading] = useState(false);
-  const [allTowers, setAllTowers] = useState([]);
-  const [message, setMessage] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [allTowers, setAllTowers]   = useState([]);
+  const [message,   setMessage]     = useState(null);
+  const [submitting, setSubmitting]  = useState(false);
 
   useEffect(() => {
     getFilterOptions().then(res => {
-      setLineOptions(res.data.line_names || []);
+      setLineOptions(res.data.line_names       || []);
       setDescOptions(res.data.work_descriptions || []);
-      setSupervisorOptions(res.data.supervisors || []);
+      setSupOptions( res.data.supervisors       || []);
     });
-
     api.get('/lines-towers/towers').then(res => setAllTowers(res.data || []));
   }, []);
 
   useEffect(() => {
-    const today = new Date();
-    const jToday = toJalali(today);
-    setDateYear(jToday.year.toString());
-    setDateMonth(jToday.month.toString());
-    setDateDay(jToday.day.toString());
-    setPmDateText(
-      `${jToday.year}/${String(jToday.month).padStart(2, '0')}/${String(jToday.day).padStart(2, '0')}`
-    );
+    const t = toJalali(new Date());
+    setDateYear(t.year.toString());
+    setDateMonth(t.month.toString());
+    setDateDay(t.day.toString());
+    setPmDateText(`${t.year}/${String(t.month).padStart(2,'0')}/${String(t.day).padStart(2,'0')}`);
   }, []);
 
-  const handleLineSearch = (value) => {
-    setForm(prev => ({ ...prev, line_name: value }));
+  const setF = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
-    if (value.trim()) {
-      setFilteredLines(lineOptions.filter(l => l.includes(value)));
-      fetchOpenPlans(value);
-    } else {
-      setFilteredLines([]);
-      setOpenPlans([]);
-    }
+  const handleLineSearch = (val) => {
+    setF('line_name', val);
+    if (val.trim()) { setFilteredLines(lineOptions.filter(l => l.includes(val))); fetchOpenPlans(val); }
+    else { setFilteredLines([]); setOpenPlans([]); }
   };
 
   const fetchOpenPlans = async (lineName) => {
@@ -80,568 +79,351 @@ function AddRecordPanel({ onSuccess }) {
     try {
       const res = await api.get(`/lines-towers/planned-tasks/line/${encodeURIComponent(lineName)}/open`);
       setOpenPlans(res.data || []);
-      setSelectedTowerIdsByPlan({});
-    } catch (err) {
-      console.error('خطا در بارگذاری برنامه‌ها:', err);
-      setOpenPlans([]);
-    } finally {
-      setPlansLoading(false);
-    }
+      setSelByPlan({});
+    } catch { setOpenPlans([]); } finally { setPlansLoading(false); }
   };
 
-  const selectLine = (name) => {
-    setForm(prev => ({ ...prev, line_name: name }));
-    setFilteredLines([]);
-    fetchOpenPlans(name);
+  const selectLine = (name) => { setF('line_name', name); setFilteredLines([]); fetchOpenPlans(name); };
+  const handleDescSearch = (val) => {
+    setF('work_description', val);
+    setFilteredDescs(val.trim() ? descOptions.filter(d => d.includes(val)) : []);
   };
-
-  const handleDescSearch = (value) => {
-    setForm(prev => ({ ...prev, work_description: value }));
-
-    if (value.trim()) {
-      setFilteredDescs(descOptions.filter(d => d.includes(value)));
-    } else {
-      setFilteredDescs([]);
-    }
-  };
-
-  const selectDesc = (name) => {
-    setForm(prev => ({ ...prev, work_description: name }));
-    setFilteredDescs([]);
-  };
+  const selectDesc = (name) => { setF('work_description', name); setFilteredDescs([]); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (submitting) return;
-
-    if (
-      !form.program_type ||
-      !form.line_name ||
-      !form.voltage_level ||
-      !form.work_description ||
-      !form.tower_number ||
-      !form.location
-    ) {
-      setMessage({ type: 'error', text: 'لطفاً فیلدهای الزامی را پر کنید.' });
-      return;
+    if (!form.program_type||!form.line_name||!form.voltage_level||
+        !form.work_description||!form.tower_number||!form.location) {
+      setMessage({ type:'error', text:'لطفاً فیلدهای الزامی را پر کنید (ستاره *)' }); return;
     }
-
-    const executionDate = `${dateYear}/${String(dateMonth).padStart(2, '0')}/${String(dateDay).padStart(2, '0')}`;
-
-    const recordData = {
-      ...form,
-      pm_date: pmDateText || executionDate,
-      execution_date: executionDate,
-    };
-
-    const completePlanIds = Object.keys(selectedTowerIdsByPlan).filter(
-      planId => selectedTowerIdsByPlan[planId]?.length > 0
-    );
+    const executionDate = `${dateYear}/${String(dateMonth).padStart(2,'0')}/${String(dateDay).padStart(2,'0')}`;
+    const recordData = { ...form, pm_date: pmDateText||executionDate, execution_date: executionDate };
+    const completePlanIds = Object.keys(selByPlan).filter(id => selByPlan[id]?.length > 0);
 
     setSubmitting(true);
-    setMessage({ type: 'info', text: '⏳ در حال ثبت اطلاعات...' });
-
+    setMessage({ type:'info', text:'⏳ در حال ثبت اطلاعات...' });
     try {
       await createRecord(recordData, completePlanIds);
-
-      if (completePlanIds.length > 0) {
-        await completePlans(completePlanIds);
-      }
-
-      setMessage({
-        type: 'success',
-        text: `✅ رکورد جدید با موفقیت ثبت شد${completePlanIds.length > 0 ? ' و برنامه‌های انتخاب‌شده تکمیل شدند.' : '.'}`,
-      });
-
-      if (onSuccess) {
-        await onSuccess();
-      }
-
-      setForm({
-        program_type: '',
-        code: '',
-        line_name: '',
-        voltage_level: '',
-        work_description: '',
-        tower_number: '',
-        location: '',
-        pm_date: '',
-        execution_date: '',
-        team_count: '',
-        personnel_count: '',
-        supervisor: '',
-        quantity: '',
-        unit: ''
-      });
-
-      setOpenPlans([]);
-      setSelectedTowerIdsByPlan({});
-      setFilteredLines([]);
-      setFilteredDescs([]);
+      if (completePlanIds.length > 0) await completePlans(completePlanIds);
+      setMessage({ type:'success', text:`✅ رکورد با موفقیت ثبت شد${completePlanIds.length>0?' و برنامه‌های انتخاب‌شده تکمیل شدند.':'.'}` });
+      if (onSuccess) await onSuccess();
+      clearForm();
     } catch (err) {
-      console.error(err);
-
-      const apiError =
-        err?.response?.data?.message ||
-        err?.response?.data?.detail ||
-        err?.response?.data?.error ||
-        err?.message;
-
-      setMessage({
-        type: 'error',
-        text: apiError ? `❌ ${apiError}` : '❌ خطا در ثبت رکورد.'
-      });
-    } finally {
-      setSubmitting(false);
-    }
+      const msg = err?.response?.data?.message || err?.response?.data?.detail || err?.message;
+      setMessage({ type:'error', text: msg ? `❌ ${msg}` : '❌ خطا در ثبت رکورد.' });
+    } finally { setSubmitting(false); }
   };
 
-  const toJalali = (date) => {
-    const d = new Date(date);
-    const gy = d.getFullYear();
-    const gm = d.getMonth() + 1;
-    const gd = d.getDate();
-    const gdm = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
-    const g_days = gdm[gm - 1] + gd + (gm > 2 && ((gy % 4 === 0 && gy % 100 !== 0) || (gy % 400 === 0)) ? 1 : 0);
-    const jy = gy - 621;
-    let jDay = g_days - 79;
-
-    if (jDay <= 186) {
-      const jm = Math.ceil(jDay / 31);
-      const jd = jDay - (jm - 1) * 31;
-      return { year: jy, month: jm, day: jd };
-    } else {
-      jDay -= 186;
-      const jm = Math.ceil(jDay / 30) + 6;
-      const jd = jDay - (jm - 7) * 30;
-      return { year: jy, month: jm, day: jd };
-    }
-  };
-
-  const inputStyle = {
-    width: '100%',
-    padding: '10px 12px',
-    background: 'rgba(10,15,25,0.8)',
-    border: '1px solid rgba(0,240,255,0.3)',
-    borderRadius: '8px',
-    color: '#e0f0ff',
-    fontSize: '0.9rem',
-    outline: 'none',
-  };
-
-  const suggestionsStyle = {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    background: 'rgba(15,25,35,0.95)',
-    border: '1px solid var(--accent-cyan)',
-    borderRadius: '8px',
-    maxHeight: '200px',
-    overflowY: 'auto',
-    zIndex: 100,
+  const clearForm = () => {
+    setForm(EMPTY_FORM);
+    setOpenPlans([]); setSelByPlan({});
+    setFilteredLines([]); setFilteredDescs([]);
+    setMessage(null);
   };
 
   return (
-    <div className="glass-card" style={{ padding: '30px' }}>
-      <h3 style={{ color: 'var(--accent-cyan)', marginBottom: '20px' }}>➕ ثبت رکورد جدید</h3>
+    <div className="arp-root">
 
+      {/* ===== Header ===== */}
+      <div className="arp-header">
+        <div className="arp-header-icon">➕</div>
+        <div>
+          <h2 className="arp-header-title">ثبت رکورد جدید</h2>
+          <p className="arp-header-sub">فیلدهای ستارهدار الزامی هستند</p>
+        </div>
+      </div>
+
+      {/* ===== Alert ===== */}
       {message && (
-        <div className={`message ${message.type}`} style={{ marginBottom: '15px' }}>
+        <div className={`arp-alert arp-alert--${message.type}`}>
           {message.text}
+          <button className="arp-alert-close" onClick={()=>setMessage(null)}>×</button>
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
-          <div>
-            <label>🌡️ نوع برنامه *</label>
-            <select
-              value={form.program_type}
-              onChange={e => setForm({ ...form, program_type: e.target.value })}
-              required
-              style={inputStyle}
-              disabled={submitting}
-            >
-              <option value="">انتخاب کنید</option>
-              <option value="سرد">سرد</option>
-              <option value="گرم">گرم</option>
-            </select>
+      <form onSubmit={handleSubmit} noValidate>
+
+        {/* ===== Section 1: اطلاعات پایه ===== */}
+        <div className="arp-section">
+          <div className="arp-section-title">
+            <span className="arp-section-dot arp-dot--primary"></span>
+            اطلاعات پایه
           </div>
+          <div className="arp-grid">
 
-          <div>
-            <label>🔢 کد</label>
-            <input
-              type="text"
-              value={form.code}
-              onChange={e => setForm({ ...form, code: e.target.value })}
-              placeholder="مثال: 1"
-              style={inputStyle}
-              disabled={submitting}
-            />
-          </div>
-
-          <div style={{ gridColumn: 'span 2' }}>
-            <label>📍 نام خط *</label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type="text"
-                value={form.line_name}
-                onChange={e => handleLineSearch(e.target.value)}
-                placeholder="جستجو یا انتخاب نام خط..."
-                required
-                style={inputStyle}
-                disabled={submitting}
-              />
-              {filteredLines.length > 0 && !submitting && (
-                <div style={suggestionsStyle}>
-                  {filteredLines.slice(0, 10).map((line, i) => (
-                    <div key={i} className="suggestion-item" onClick={() => selectLine(line)}>
-                      {line}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <label>⚡ سطح ولتاژ *</label>
-            <select
-              value={form.voltage_level}
-              onChange={e => setForm({ ...form, voltage_level: e.target.value })}
-              required
-              style={inputStyle}
-              disabled={submitting}
-            >
-              <option value="">انتخاب کنید</option>
-              <option value="63">63 کیلوولت</option>
-              <option value="110">110 کیلوولت</option>
-              <option value="132">132 کیلوولت</option>
-              <option value="230">230 کیلوولت</option>
-              <option value="400">400 کیلوولت</option>
-            </select>
-          </div>
-
-          <div style={{ gridColumn: 'span 2' }}>
-            <label>📄 شرح انجام کار *</label>
-            <div style={{ position: 'relative' }}>
-              <textarea
-                value={form.work_description}
-                onChange={e => handleDescSearch(e.target.value)}
-                placeholder="جستجو یا انتخاب شرح کار..."
-                required
-                style={{ ...inputStyle, minHeight: '80px' }}
-                disabled={submitting}
-              />
-              {filteredDescs.length > 0 && !submitting && (
-                <div style={suggestionsStyle}>
-                  {filteredDescs.slice(0, 10).map((desc, i) => (
-                    <div key={i} className="suggestion-item" onClick={() => selectDesc(desc)}>
-                      {desc}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <label>🏗️ شماره دکل *</label>
-            <input
-              type="text"
-              value={form.tower_number}
-              onChange={e => setForm({ ...form, tower_number: e.target.value })}
-              required
-              style={inputStyle}
-              disabled={submitting}
-            />
-          </div>
-
-          <div>
-            <label>🗻 موقعیت *</label>
-            <select
-              value={form.location}
-              onChange={e => setForm({ ...form, location: e.target.value })}
-              required
-              style={inputStyle}
-              disabled={submitting}
-            >
-              <option value="">انتخاب کنید</option>
-              <option value="کوهستان">کوهستان</option>
-              <option value="دشت">دشت</option>
-              <option value="شهری">شهری</option>
-            </select>
-          </div>
-
-          <div>
-            <label>📅 تاریخ انجام *</label>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <select value={dateYear} onChange={e => setDateYear(e.target.value)} style={inputStyle} disabled={submitting}>
-                <option value="">سال</option>
-                {Array.from({ length: 11 }, (_, i) => i + 1400).map(y => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-
-              <select value={dateMonth} onChange={e => setDateMonth(e.target.value)} style={inputStyle} disabled={submitting}>
-                <option value="">ماه</option>
-                {PERSIAN_MONTHS.map((m, i) => (
-                  <option key={i + 1} value={i + 1}>{i + 1}-{m}</option>
-                ))}
-              </select>
-
-              <select value={dateDay} onChange={e => setDateDay(e.target.value)} style={inputStyle} disabled={submitting}>
-                <option value="">روز</option>
-                {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
+            <div className="arp-field">
+              <label className="arp-label">🌡️ نوع برنامه <span className="arp-req">*</span></label>
+              <select className="arp-select" value={form.program_type} onChange={e=>setF('program_type',e.target.value)} required disabled={submitting}>
+                <option value="">— انتخاب کنید —</option>
+                <option value="سرد">❄️ سرد</option>
+                <option value="گرم">🔥 گرم</option>
               </select>
             </div>
-          </div>
 
-          <div>
-            <label>📅 تاریخ ثبت گزارش</label>
-            <input
-              type="text"
-              value={pmDateText}
-              onChange={e => setPmDateText(e.target.value)}
-              placeholder="YYYY/MM/DD"
-              style={inputStyle}
-              disabled={submitting}
-            />
-          </div>
+            <div className="arp-field">
+              <label className="arp-label">🔢 کد</label>
+              <input className="arp-input" type="text" value={form.code} onChange={e=>setF('code',e.target.value)} placeholder="مثال: A-101" disabled={submitting} />
+            </div>
 
-          <div>
-            <label>👥 تعداد اکیپ</label>
-            <select
-              value={form.team_count}
-              onChange={e => setForm({ ...form, team_count: e.target.value })}
-              style={inputStyle}
-              disabled={submitting}
-            >
-              <option value="">انتخاب</option>
-              {[...Array(10).keys()].map(i => (
-                <option key={i + 1} value={i + 1}>{i + 1}</option>
-              ))}
-            </select>
-          </div>
+            <div className="arp-field arp-field--wide">
+              <label className="arp-label">⚡ نام خط <span className="arp-req">*</span></label>
+              <div className="arp-autocomplete">
+                <input
+                  className="arp-input"
+                  type="text"
+                  value={form.line_name}
+                  onChange={e=>handleLineSearch(e.target.value)}
+                  placeholder="جستجو یا انتخاب نام خط..."
+                  required
+                  disabled={submitting}
+                  autoComplete="off"
+                />
+                {filteredLines.length > 0 && !submitting && (
+                  <ul className="arp-dropdown">
+                    {filteredLines.slice(0,10).map((l,i)=>(
+                      <li key={i} className="arp-dropdown-item" onClick={()=>selectLine(l)}>
+                        <span className="arp-dropdown-icon">⚡</span>{l}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
 
-          <div>
-            <label>👨 تعداد نفرات</label>
-            <select
-              value={form.personnel_count}
-              onChange={e => setForm({ ...form, personnel_count: e.target.value })}
-              style={inputStyle}
-              disabled={submitting}
-            >
-              <option value="">انتخاب</option>
-              {[...Array(10).keys()].map(i => (
-                <option key={i + 1} value={i + 1}>{i + 1}</option>
-              ))}
-            </select>
-          </div>
+            <div className="arp-field">
+              <label className="arp-label">🔌 سطح ولتاژ <span className="arp-req">*</span></label>
+              <select className="arp-select" value={form.voltage_level} onChange={e=>setF('voltage_level',e.target.value)} required disabled={submitting}>
+                <option value="">— ا温تخاب کنید —</option>
+                {['63','110','132','230','400'].map(v=><option key={v} value={v}>{v} کیلوولت</option>)}
+              </select>
+            </div>
 
-          <div>
-            <label>👔 نام سرپرست</label>
-            <select
-              value={form.supervisor}
-              onChange={e => setForm({ ...form, supervisor: e.target.value })}
-              style={inputStyle}
-              disabled={submitting}
-            >
-              <option value="">انتخاب کنید</option>
-              {supervisorOptions.map((s, i) => (
-                <option key={i} value={s}>{s}</option>
-              ))}
-            </select>
-          </div>
+            <div className="arp-field">
+              <label className="arp-label">🗿 شماره دکل <span className="arp-req">*</span></label>
+              <input className="arp-input" type="text" value={form.tower_number} onChange={e=>setF('tower_number',e.target.value)} required disabled={submitting} placeholder="مثال: 12" />
+            </div>
 
-          <div>
-            <label>📏 واحد</label>
-            <input
-              type="text"
-              value={form.unit}
-              onChange={e => setForm({ ...form, unit: e.target.value })}
-              placeholder="مثلاً کیلوگرم"
-              style={inputStyle}
-              disabled={submitting}
-            />
-          </div>
+            <div className="arp-field">
+              <label className="arp-label">📍 موقعیت <span className="arp-req">*</span></label>
+              <select className="arp-select" value={form.location} onChange={e=>setF('location',e.target.value)} required disabled={submitting}>
+                <option value="">— انتخاب کنید —</option>
+                {['کوهستان','دشت','شهری'].map(l=><option key={l} value={l}>{l}</option>)}
+              </select>
+            </div>
 
-          <div>
-            <label>📊 مقدار</label>
-            <input
-              type="number"
-              step="0.1"
-              value={form.quantity}
-              onChange={e => setForm({ ...form, quantity: e.target.value })}
-              style={inputStyle}
-              disabled={submitting}
-            />
           </div>
         </div>
 
+        {/* ===== Section 2: شرح کار ===== */}
+        <div className="arp-section">
+          <div className="arp-section-title">
+            <span className="arp-section-dot arp-dot--teal"></span>
+            شرح انجام کار
+          </div>
+          <div className="arp-field arp-field--full">
+            <label className="arp-label">📄 شرح کار <span className="arp-req">*</span></label>
+            <div className="arp-autocomplete">
+              <textarea
+                className="arp-textarea"
+                value={form.work_description}
+                onChange={e=>handleDescSearch(e.target.value)}
+                placeholder="جستجو یا تایپ شرح کار..."
+                required
+                disabled={submitting}
+                rows={3}
+              />
+              {filteredDescs.length > 0 && !submitting && (
+                <ul className="arp-dropdown">
+                  {filteredDescs.slice(0,10).map((d,i)=>(
+                    <li key={i} className="arp-dropdown-item" onClick={()=>selectDesc(d)}>
+                      <span className="arp-dropdown-icon">🔧</span>{d}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ===== Section 3: تاریخ‌ها ===== */}
+        <div className="arp-section">
+          <div className="arp-section-title">
+            <span className="arp-section-dot arp-dot--amber"></span>
+            تاریخ‌ها
+          </div>
+          <div className="arp-grid">
+
+            <div className="arp-field arp-field--wide">
+              <label className="arp-label">📅 تاریخ انجام <span className="arp-req">*</span></label>
+              <div className="arp-date-row">
+                <select className="arp-select" value={dateYear} onChange={e=>setDateYear(e.target.value)} disabled={submitting}>
+                  <option value="">سال</option>
+                  {YEARS.map(y=><option key={y} value={y}>{y}</option>)}
+                </select>
+                <select className="arp-select" value={dateMonth} onChange={e=>setDateMonth(e.target.value)} disabled={submitting}>
+                  <option value="">ماه</option>
+                  {MONTHS.map((m,i)=><option key={i+1} value={i+1}>{i+1} — {m}</option>)}
+                </select>
+                <select className="arp-select" value={dateDay} onChange={e=>setDateDay(e.target.value)} disabled={submitting}>
+                  <option value="">روز</option>
+                  {DAYS.map(d=><option key={d} value={d}>{d}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="arp-field">
+              <label className="arp-label">📅 تاریخ ثبت گزارش</label>
+              <input
+                className="arp-input"
+                type="text"
+                value={pmDateText}
+                onChange={e=>setPmDateText(e.target.value)}
+                placeholder="YYYY/MM/DD"
+                disabled={submitting}
+              />
+              <span className="arp-hint">فرمت: 1402/06/15</span>
+            </div>
+
+          </div>
+        </div>
+
+        {/* ===== Section 4: نفرات و سرپرست ===== */}
+        <div className="arp-section">
+          <div className="arp-section-title">
+            <span className="arp-section-dot arp-dot--violet"></span>
+            نفرات و سرپرست
+          </div>
+          <div className="arp-grid">
+
+            <div className="arp-field">
+              <label className="arp-label">👥 تعداد اکیپ</label>
+              <select className="arp-select" value={form.team_count} onChange={e=>setF('team_count',e.target.value)} disabled={submitting}>
+                <option value="">— انتخاب —</option>
+                {Array.from({length:10},(_,i)=>i+1).map(n=><option key={n} value={n}>{n} اکیپ</option>)}
+              </select>
+            </div>
+
+            <div className="arp-field">
+              <label className="arp-label">👤 تعداد نفرات</label>
+              <select className="arp-select" value={form.personnel_count} onChange={e=>setF('personnel_count',e.target.value)} disabled={submitting}>
+                <option value="">— انتخاب —</option>
+                {Array.from({length:10},(_,i)=>i+1).map(n=><option key={n} value={n}>{n} نفر</option>)}
+              </select>
+            </div>
+
+            <div className="arp-field">
+              <label className="arp-label">👔 سرپرست اکیپ</label>
+              <select className="arp-select" value={form.supervisor} onChange={e=>setF('supervisor',e.target.value)} disabled={submitting}>
+                <option value="">— انتخاب کنید —</option>
+                {supOptions.map((s,i)=><option key={i} value={s}>{s}</option>)}
+              </select>
+            </div>
+
+            <div className="arp-field">
+              <label className="arp-label">📏 مقدار</label>
+              <input className="arp-input" type="number" step="0.1" value={form.quantity} onChange={e=>setF('quantity',e.target.value)} placeholder="0" disabled={submitting} />
+            </div>
+
+            <div className="arp-field">
+              <label className="arp-label">📦 واحد</label>
+              <input className="arp-input" type="text" value={form.unit} onChange={e=>setF('unit',e.target.value)} placeholder="مثلاً کیلوگرم" disabled={submitting} />
+            </div>
+
+          </div>
+        </div>
+
+        {/* ===== Section 5: برنامه‌های باز ===== */}
         {form.line_name && (
-          <div style={{ marginTop: '25px' }}>
+          <div className="arp-section arp-section--plans">
+            <div className="arp-section-title">
+              <span className="arp-section-dot arp-dot--rose"></span>
+              برنامه‌های باز خط &laquo;{form.line_name}&raquo;
+            </div>
+
             {plansLoading ? (
-              <p style={{ color: 'var(--text-secondary)' }}>⏳ در حال بارگذاری برنامه‌ها...</p>
-            ) : openPlans.length > 0 ? (
-              <div className="glass-card" style={{ padding: '15px', background: 'rgba(30,41,59,0.9)' }}>
-                <h4 style={{ color: '#8b5cf6', marginBottom: '12px' }}>📅 برنامه‌های باز این خط</h4>
-
+              <div className="arp-plans-loading">
+                <span className="arp-spinner"></span> در حال بارگذاری برنامه‌ها...
+              </div>
+            ) : openPlans.length === 0 ? (
+              <div className="arp-plans-empty">
+                ℹ️ هیچ برنامه‌ای باز برای این خط وجود ندارد.
+              </div>
+            ) : (
+              <div className="arp-plans-list">
                 {openPlans.map((plan, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      marginBottom: '12px',
-                      borderBottom: '1px solid #334155',
-                      paddingBottom: '8px'
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <strong style={{ color: '#e2e8f0' }}>{plan.type}</strong>
-                        <span style={{ color: '#94a3b8', marginLeft: 10 }}>{plan.description}</span>
+                  <div key={idx} className="arp-plan-card">
+                    <div className="arp-plan-head">
+                      <div className="arp-plan-info">
+                        <span className="arp-plan-type">{plan.type}</span>
+                        <span className="arp-plan-desc">{plan.description}</span>
                       </div>
-
                       <button
                         type="button"
-                        className="btn-glow"
-                        style={{ padding: '4px 12px', fontSize: '0.8rem' }}
+                        className="arp-btn arp-btn--outline"
                         disabled={submitting}
                         onClick={() => {
-                          const selectedTowerIds = Object.values(selectedTowerIdsByPlan).flat();
-                          const numbers = selectedTowerIds
-                            .map(tid => allTowers.find(t => t.id === tid)?.number)
-                            .filter(Boolean)
-                            .join('-');
-
-                          setForm(prev => ({
-                            ...prev,
-                            work_description: `${plan.type} - ${plan.description}`,
-                            tower_number: numbers || prev.tower_number,
-                          }));
+                          const ids = Object.values(selByPlan).flat();
+                          const nums = ids.map(tid=>allTowers.find(t=>t.id===tid)?.number).filter(Boolean).join('-');
+                          setF('work_description', `${plan.type} - ${plan.description}`);
+                          if (nums) setF('tower_number', nums);
                         }}
                       >
                         📋 انتخاب برنامه
                       </button>
                     </div>
 
-                    <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+                    <div className="arp-plan-towers">
                       {plan.towers.map(tower => (
-                        <label
-                          key={tower.tower_id}
-                          style={{ cursor: submitting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
-                        >
+                        <label key={tower.tower_id} className={`arp-tower-chip${(selByPlan[tower.plan_id]||[]).includes(tower.tower_id)?' arp-tower-chip--active':''}${submitting?' arp-tower-chip--disabled':''}` }>
                           <input
                             type="checkbox"
+                            className="arp-tower-cb"
                             disabled={submitting}
-                            checked={(selectedTowerIdsByPlan[tower.plan_id] || []).includes(tower.tower_id)}
-                            onChange={(e) => {
-                              setSelectedTowerIdsByPlan(prev => {
-                                const current = prev[tower.plan_id] || [];
-
-                                if (e.target.checked) {
-                                  return { ...prev, [tower.plan_id]: [...current, tower.tower_id] };
-                                }
-
-                                return {
-                                  ...prev,
-                                  [tower.plan_id]: current.filter(id => id !== tower.tower_id)
-                                };
+                            checked={(selByPlan[tower.plan_id]||[]).includes(tower.tower_id)}
+                            onChange={e => {
+                              setSelByPlan(prev => {
+                                const cur = prev[tower.plan_id]||[];
+                                return { ...prev, [tower.plan_id]: e.target.checked ? [...cur, tower.tower_id] : cur.filter(id=>id!==tower.tower_id) };
                               });
                             }}
                           />
-                          <span style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>🗼 {tower.number}</span>
+                          🗳️ {tower.number}
                         </label>
                       ))}
-
                       <button
                         type="button"
-                        className="btn-glow"
-                        style={{ padding: '2px 8px', fontSize: '0.7rem', background: '#475569' }}
+                        className="arp-btn arp-btn--xs"
                         disabled={submitting}
                         onClick={() => {
-                          setSelectedTowerIdsByPlan(prev => {
-                            const newState = { ...prev };
-                            plan.towers.forEach(tower => {
-                              newState[tower.plan_id] = [tower.tower_id];
-                            });
-                            return newState;
+                          setSelByPlan(prev => {
+                            const n = {...prev};
+                            plan.towers.forEach(t => { n[t.plan_id]=[t.tower_id]; });
+                            return n;
                           });
                         }}
-                      >
-                        انتخاب همه
-                      </button>
+                      >✓ همه</button>
                     </div>
                   </div>
                 ))}
               </div>
-            ) : (
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                ℹ️ هیچ برنامه‌ی باز برای این خط وجود ندارد.
-              </p>
             )}
           </div>
         )}
 
-        <div style={{ marginTop: '25px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <button type="submit" className="btn-glow" disabled={submitting}>
-            {submitting ? '⏳ در حال ثبت...' : '✅ ثبت رکورد و تکمیل برنامه‌ها'}
+        {/* ===== Actions ===== */}
+        <div className="arp-actions">
+          <button type="submit" className="arp-btn arp-btn--primary" disabled={submitting}>
+            {submitting
+              ? <><span className="arp-spinner arp-spinner--sm"></span> در حال ثبت...،لطفاً صبر کنید</>
+              : <>✅ ثبت رکورد</>}
           </button>
-
-          <button
-            type="button"
-            className="btn-glow"
-            disabled={submitting}
-            style={{
-              background: 'transparent',
-              border: '1px solid var(--accent-cyan)',
-              color: 'var(--accent-cyan)'
-            }}
-            onClick={() => {
-              setForm({
-                program_type: '',
-                code: '',
-                line_name: '',
-                voltage_level: '',
-                work_description: '',
-                tower_number: '',
-                location: '',
-                pm_date: '',
-                execution_date: '',
-                team_count: '',
-                personnel_count: '',
-                supervisor: '',
-                quantity: '',
-                unit: ''
-              });
-              setOpenPlans([]);
-              setSelectedTowerIdsByPlan({});
-              setFilteredLines([]);
-              setFilteredDescs([]);
-              setMessage(null);
-            }}
-          >
+          <button type="button" className="arp-btn arp-btn--ghost" disabled={submitting} onClick={clearForm}>
             🗑️ پاک کردن فرم
           </button>
         </div>
+
       </form>
-
-      <style>{`
-        .suggestion-item {
-          padding: 8px 12px;
-          cursor: pointer;
-          border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .suggestion-item:hover {
-          background-color: var(--accent-cyan);
-          color: black;
-        }
-      `}</style>
     </div>
   );
 }
