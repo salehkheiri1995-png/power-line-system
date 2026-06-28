@@ -1,18 +1,19 @@
 /* ============================================================
-   AddRecordPanel — Design System
-   رنگ پایه: سبز تیره #01696f هماهنگ با دشبورد
+   AddRecordPanel — Design System (Dark-Mode Compatible)
+   همه رنگ‌ها از CSS variables سیستم — هماهنگ با light/dark تم
    ============================================================ */
 
 .arp-root {
-  background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(1,105,111,0.10);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
   padding: 0;
   overflow: hidden;
-  font-family: 'Vazirmatn', Tahoma, sans-serif;
+  font-family: var(--font-body);
   direction: rtl;
   max-width: 900px;
   margin: 0 auto;
+  border: 1px solid var(--color-border);
 }
 
 /* ─── Header ─── */
@@ -21,13 +22,13 @@
   align-items: center;
   gap: 16px;
   padding: 24px 28px;
-  background: linear-gradient(135deg, #01696f 0%, #1d6fa4 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, #1d6fa4 100%);
   color: #fff;
 }
 .arp-header-icon {
   width: 48px; height: 48px;
   background: rgba(255,255,255,0.18);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   display: grid; place-items: center;
   font-size: 1.5rem;
   flex-shrink: 0;
@@ -52,14 +53,26 @@
   gap: 12px;
   margin: 20px 28px 0;
   padding: 12px 16px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   font-size: 0.9rem;
   font-weight: 600;
   animation: arp-slideIn .25s ease;
 }
-.arp-alert--success { background:#d1fae5; color:#065f46; border:1px solid #6ee7b7; }
-.arp-alert--error   { background:#fee2e2; color:#7f1d1d; border:1px solid #fca5a5; }
-.arp-alert--info    { background:#e0f2fe; color:#0c4a6e; border:1px solid #7dd3fc; }
+.arp-alert--success {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  border: 1px solid rgba(46,107,14,0.3);
+}
+.arp-alert--error {
+  background: var(--color-error-bg);
+  color: var(--color-error);
+  border: 1px solid rgba(181,42,30,0.3);
+}
+.arp-alert--info {
+  background: var(--color-info-bg);
+  color: var(--color-info);
+  border: 1px solid rgba(1,105,111,0.3);
+}
 .arp-alert-close {
   background: none; border: none; font-size: 1.2rem;
   cursor: pointer; line-height: 1; opacity: .6;
@@ -71,10 +84,10 @@
 /* ─── Sections ─── */
 .arp-section {
   padding: 22px 28px;
-  border-bottom: 1px solid #f0f4f8;
+  border-bottom: 1px solid var(--color-divider);
 }
 .arp-section:last-of-type { border-bottom: none; }
-.arp-section--plans { background: #f8fbff; }
+.arp-section--plans { background: var(--color-surface-2); }
 
 .arp-section-title {
   display: flex;
@@ -82,7 +95,7 @@
   gap: 8px;
   font-size: 0.85rem;
   font-weight: 700;
-  color: #475569;
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: .04em;
   margin-bottom: 16px;
@@ -92,11 +105,11 @@
   border-radius: 50%;
   flex-shrink: 0;
 }
-.arp-dot--primary { background: #01696f; }
+.arp-dot--primary { background: var(--color-primary); }
 .arp-dot--teal    { background: #0891b2; }
 .arp-dot--amber   { background: #d97706; }
 .arp-dot--violet  { background: #7c3aed; }
-.arp-dot--rose    { background: #e11d48; }
+.arp-dot--rose    { background: var(--color-error); }
 
 /* ─── Grid ─── */
 .arp-grid {
@@ -113,12 +126,12 @@
 .arp-label {
   font-size: 0.82rem;
   font-weight: 700;
-  color: #374151;
+  color: var(--color-text);
 }
-.arp-req { color: #e11d48; }
+.arp-req { color: var(--color-error); }
 .arp-hint {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: var(--color-text-faint);
   margin-top: 2px;
 }
 
@@ -129,29 +142,37 @@
   width: 100%;
   box-sizing: border-box;
   padding: 10px 12px;
-  background: #f8fafc;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 8px;
-  color: #1e293b;
+  background: var(--color-surface-2);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
   font-family: inherit;
   font-size: 0.88rem;
   outline: none;
-  transition: border-color .2s, box-shadow .2s;
+  transition: border-color .2s, box-shadow .2s, background .2s;
   -webkit-appearance: none;
   appearance: none;
 }
 .arp-input:focus,
 .arp-select:focus,
 .arp-textarea:focus {
-  border-color: #01696f;
-  box-shadow: 0 0 0 3px rgba(1,105,111,0.12);
-  background: #fff;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-faint);
+  background: var(--color-surface);
+}
+.arp-input::placeholder,
+.arp-textarea::placeholder {
+  color: var(--color-text-faint);
 }
 .arp-input:disabled,
 .arp-select:disabled,
 .arp-textarea:disabled {
   opacity: .55;
   cursor: not-allowed;
+}
+.arp-select option {
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 .arp-textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
 
@@ -168,15 +189,15 @@
   position: absolute;
   top: calc(100% + 4px);
   right: 0; left: 0;
-  background: #fff;
-  border: 1.5px solid #01696f;
-  border-radius: 10px;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-primary);
+  border-radius: var(--radius-md);
   max-height: 220px;
   overflow-y: auto;
   z-index: 200;
   margin: 0; padding: 4px 0;
   list-style: none;
-  box-shadow: 0 8px 24px rgba(1,105,111,.16);
+  box-shadow: var(--shadow-lg);
 }
 .arp-dropdown-item {
   display: flex;
@@ -184,13 +205,13 @@
   gap: 8px;
   padding: 9px 14px;
   font-size: 0.88rem;
-  color: #1e293b;
+  color: var(--color-text);
   cursor: pointer;
   transition: background .15s;
 }
 .arp-dropdown-item:hover {
-  background: #f0fdfb;
-  color: #01696f;
+  background: var(--color-primary-faint);
+  color: var(--color-primary);
 }
 .arp-dropdown-icon { font-size: 0.9rem; }
 
@@ -201,26 +222,30 @@
   align-items: center;
   gap: 10px;
   padding: 16px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   font-size: 0.88rem;
-  color: #64748b;
-  background: #f1f5f9;
+  color: var(--color-text-muted);
+  background: var(--color-surface-offset);
+  border: 1px solid var(--color-divider);
 }
 
 .arp-plans-list { display: flex; flex-direction: column; gap: 12px; }
 
 .arp-plan-card {
-  background: #fff;
-  border: 1.5px solid #e2e8f0;
-  border-right: 4px solid #01696f;
-  border-radius: 10px;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-right: 4px solid var(--color-primary);
+  border-radius: var(--radius-md);
   padding: 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  transition: box-shadow .2s;
+  transition: box-shadow .2s, border-color .2s;
 }
-.arp-plan-card:hover { box-shadow: 0 4px 16px rgba(1,105,111,.10); }
+.arp-plan-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-divider);
+}
 
 .arp-plan-head {
   display: flex;
@@ -232,11 +257,11 @@
 .arp-plan-type {
   font-size: 0.88rem;
   font-weight: 700;
-  color: #01696f;
+  color: var(--color-primary);
 }
 .arp-plan-desc {
   font-size: 0.82rem;
-  color: #64748b;
+  color: var(--color-text-muted);
 }
 
 /* ─── Tower Chips ─── */
@@ -251,40 +276,46 @@
   align-items: center;
   gap: 5px;
   padding: 5px 12px;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 20px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-pill);
   font-size: 0.82rem;
-  color: #475569;
-  background: #f8fafc;
+  color: var(--color-text-muted);
+  background: var(--color-surface-offset);
   cursor: pointer;
   transition: all .18s;
   user-select: none;
 }
-.arp-tower-chip:hover { border-color: #01696f; color: #01696f; background: #f0fdfb; }
+.arp-tower-chip:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-faint);
+}
 .arp-tower-chip--active {
-  background: #01696f;
-  border-color: #01696f;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
   color: #fff;
   font-weight: 700;
 }
 .arp-tower-chip--disabled { opacity: .5; cursor: not-allowed; pointer-events: none; }
 .arp-tower-cb { display: none; }
 
-/* ─── Buttons ─── */
+/* ─── Actions bar ─── */
 .arp-actions {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
   padding: 20px 28px 28px;
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
+  background: var(--color-surface-offset);
+  border-top: 1px solid var(--color-divider);
 }
+
+/* ─── Buttons ─── */
 .arp-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 11px 24px;
-  border-radius: 9px;
+  border-radius: var(--radius-md);
   font-family: inherit;
   font-size: 0.9rem;
   font-weight: 700;
@@ -294,38 +325,42 @@
   white-space: nowrap;
 }
 .arp-btn--primary {
-  background: linear-gradient(135deg, #01696f, #1d6fa4);
+  background: linear-gradient(135deg, var(--color-primary), #1d6fa4);
   color: #fff;
-  box-shadow: 0 4px 14px rgba(1,105,111,.30);
+  box-shadow: var(--shadow-primary);
 }
 .arp-btn--primary:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 6px 18px rgba(1,105,111,.40);
 }
 .arp-btn--ghost {
-  background: #fff;
-  color: #64748b;
-  border-color: #cbd5e1;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
 }
-.arp-btn--ghost:hover:not(:disabled) { border-color: #94a3b8; color: #334155; }
+.arp-btn--ghost:hover:not(:disabled) {
+  border-color: var(--color-divider);
+  color: var(--color-text);
+  background: var(--color-surface-2);
+}
 .arp-btn--outline {
   background: transparent;
-  border-color: #01696f;
-  color: #01696f;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
   font-size: 0.82rem;
   padding: 7px 14px;
 }
-.arp-btn--outline:hover:not(:disabled) { background: #f0fdfb; }
+.arp-btn--outline:hover:not(:disabled) { background: var(--color-primary-faint); }
 .arp-btn--xs {
-  background: #e2e8f0;
-  color: #475569;
+  background: var(--color-surface-dynamic);
+  color: var(--color-text-muted);
   border: none;
   font-size: 0.78rem;
   padding: 5px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-weight: 600;
 }
-.arp-btn--xs:hover:not(:disabled) { background: #cbd5e1; }
+.arp-btn--xs:hover:not(:disabled) { background: var(--color-surface-offset-2); }
 .arp-btn:disabled { opacity: .55; cursor: not-allowed; transform: none !important; }
 
 /* ─── Spinner ─── */
