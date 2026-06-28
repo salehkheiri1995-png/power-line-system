@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 
+const YEARS  = Array.from({length:11}, (_,i) => 1396+i); // 1396..1406
+const MONTHS = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+const DAYS   = Array.from({length:31}, (_,i) => i+1);
+
 function FilterPanel({ options, onFilter, onClear, records }) {
   const [filters, setFilters] = useState({
     program_type:'', code:'', voltage_level:'', location:'', supervisor:'',
@@ -17,13 +21,6 @@ function FilterPanel({ options, onFilter, onClear, records }) {
       <div className="fp-loading">⌛ در حال بارگذاری فیلترها...</div>
     </div>
   );
-
-  const years = Array.from(new Set(
-    (records||[]).flatMap(r => r.execution_date ? [parseInt(r.execution_date.split('/')[0])] : [])
-  )).sort((a,b) => b-a);
-
-  const MONTHS = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
-  const DAYS  = Array.from({length:31}, (_,i) => i+1);
 
   const filteredLines = (options.line_names||[]).filter(l => l.includes(lineSearch));
   const filteredDescs = (options.work_descriptions||[]).filter(d => d.includes(descSearch));
@@ -44,6 +41,8 @@ function FilterPanel({ options, onFilter, onClear, records }) {
 
   const hasActive = selectedLines.length || selectedDescs.length ||
     Object.values(filters).some(v => v !== '');
+
+  const setF = (key, val) => setFilters(f => ({...f, [key]: val}));
 
   return (
     <div className="fp-root">
@@ -77,7 +76,7 @@ function FilterPanel({ options, onFilter, onClear, records }) {
                 <select
                   className="fp-select"
                   value={filters[key]}
-                  onChange={e => setFilters({...filters,[key]:e.target.value})}
+                  onChange={e => setF(key, e.target.value)}
                 >
                   <option value="">— همه —</option>
                   {opts.map(o => <option key={o} value={o}>{o}</option>)}
@@ -88,19 +87,25 @@ function FilterPanel({ options, onFilter, onClear, records }) {
 
           {/* ─── ردیف ۲: تاریخ ─── */}
           <div className="fp-row fp-row-2">
-            {[{label:'📅 از تاریخ', pre:'dateFrom'}, {label:'📅 تا تاریخ', pre:'dateTo'}].map(({label,pre}) => (
+            {[
+              {label:'📅 از تاریخ', pre:'dateFrom'},
+              {label:'📅 تا تاریخ', pre:'dateTo'},
+            ].map(({label,pre}) => (
               <div key={pre} className="fp-field">
                 <label className="fp-label">{label}</label>
                 <div className="fp-date-row">
-                  <select className="fp-select" value={filters[pre+'Year']}  onChange={e=>setFilters({...filters,[pre+'Year']:e.target.value})}>
+                  <select className="fp-select" value={filters[pre+'Year']}
+                    onChange={e=>setF(pre+'Year', e.target.value)}>
                     <option value="">سال</option>
-                    {years.map(y=><option key={y} value={y}>{y}</option>)}
+                    {YEARS.map(y=><option key={y} value={y}>{y}</option>)}
                   </select>
-                  <select className="fp-select" value={filters[pre+'Month']} onChange={e=>setFilters({...filters,[pre+'Month']:e.target.value})}>
+                  <select className="fp-select" value={filters[pre+'Month']}
+                    onChange={e=>setF(pre+'Month', e.target.value)}>
                     <option value="">ماه</option>
                     {MONTHS.map((m,i)=><option key={i+1} value={i+1}>{m}</option>)}
                   </select>
-                  <select className="fp-select" value={filters[pre+'Day']}   onChange={e=>setFilters({...filters,[pre+'Day']:e.target.value})}>
+                  <select className="fp-select" value={filters[pre+'Day']}
+                    onChange={e=>setF(pre+'Day', e.target.value)}>
                     <option value="">روز</option>
                     {DAYS.map(d=><option key={d} value={d}>{d}</option>)}
                   </select>
@@ -112,7 +117,6 @@ function FilterPanel({ options, onFilter, onClear, records }) {
           {/* ─── ردیف ۳: checklistها ─── */}
           <div className="fp-row fp-row-2">
 
-            {/* نام خطوط */}
             <div className="fp-field">
               <label className="fp-label">🔌 نام خطوط
                 {selectedLines.length > 0 &&
@@ -140,7 +144,6 @@ function FilterPanel({ options, onFilter, onClear, records }) {
               </div>
             </div>
 
-            {/* شرح کارها */}
             <div className="fp-field">
               <label className="fp-label">🔧 شرح کارها
                 {selectedDescs.length > 0 &&
