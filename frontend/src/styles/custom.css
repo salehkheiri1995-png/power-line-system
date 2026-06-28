@@ -229,7 +229,7 @@ a, button, [role="button"], input, textarea, select {
 }
 
 /* ==========================================================
-   APP LAYOUT — fixed sidebar + shifting main content
+   APP LAYOUT
    ========================================================== */
 
 .app-root {
@@ -250,6 +250,7 @@ a, button, [role="button"], input, textarea, select {
     radial-gradient(circle at 80% 85%, rgba(1,105,111,0.03) 0%, transparent 45%);
 }
 
+/* SpaceBackground canvas — غیرفعال */
 #space-canvas { display: none !important; }
 
 .app-main {
@@ -343,6 +344,7 @@ a, button, [role="button"], input, textarea, select {
   transform: none !important;
 }
 
+/* btn-glow و btn-primary با هم ادغام شدن — هر دو یکی هستند */
 .btn-glow, .btn-primary {
   background: var(--color-primary);
   color: #fff;
@@ -1251,10 +1253,8 @@ select.input-field {
 
 /* ==========================================================
    TOWER MANAGEMENT — tm-* classes
-   دو تب: نقشه | گزارش‌ها
    ========================================================== */
 
-/* ─── ریشه کامپوننت ─── */
 .tm-root {
   display: flex;
   flex-direction: column;
@@ -1263,7 +1263,6 @@ select.input-field {
   min-height: 0;
 }
 
-/* ─── هدر ─── */
 .tm-header {
   display: flex;
   align-items: center;
@@ -1283,10 +1282,7 @@ select.input-field {
   gap: var(--space-3);
 }
 
-.tm-header-icon {
-  font-size: 1.6rem;
-  line-height: 1;
-}
+.tm-header-icon { font-size: 1.6rem; line-height: 1; }
 
 .tm-header-title {
   font-size: var(--text-lg);
@@ -1337,12 +1333,10 @@ select.input-field {
   background: transparent;
   position: relative;
 }
-
 .tm-tab:hover {
   background: var(--color-surface-offset);
   color: var(--color-text);
 }
-
 .tm-tab.active {
   background: var(--color-primary-faint);
   border-color: rgba(1,105,111,0.25);
@@ -1350,9 +1344,7 @@ select.input-field {
   font-weight: 700;
 }
 
-.tm-tab-icon {
-  font-size: 1rem;
-}
+.tm-tab-icon { font-size: 1rem; }
 
 .tm-tab-badge {
   display: inline-flex;
@@ -1378,17 +1370,28 @@ select.input-field {
   animation: fadeIn 0.2s ease;
 }
 
-/* نوار فیلتر بالای نقشه — compact */
+/* ─── نوار فیلتر نقشه — ادغام‌شده ─── */
 .tm-map-toolbar {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: var(--space-3) var(--space-4);
+  padding: 10px 14px;
   box-shadow: var(--shadow-sm);
   flex-shrink: 0;
 }
+.tm-map-toolbar .field-label {
+  font-size: var(--text-xs);
+  margin-bottom: 4px;
+}
+.tm-map-toolbar .input-field {
+  padding: 8px 10px;
+  font-size: var(--text-sm);
+}
+.tm-map-toolbar .form-grid {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
 
-/* بدنه اصلی: درخت | نقشه | جزئیات */
 .tm-map-body {
   display: grid;
   grid-template-columns: 240px 1fr 260px;
@@ -1397,7 +1400,6 @@ select.input-field {
   min-height: 480px;
 }
 
-/* ─── پنل‌های کناری ─── */
 .tm-side-panel {
   display: flex;
   flex-direction: column;
@@ -1437,7 +1439,6 @@ select.input-field {
   padding: var(--space-3);
 }
 
-/* ─── ظرف نقشه ─── */
 .tm-map-wrap {
   position: relative;
   border-radius: var(--radius-lg);
@@ -1449,7 +1450,6 @@ select.input-field {
   flex-direction: column;
 }
 
-/* نقشه لیفلت باید کل ارتفاع ظرف رو پر کنه */
 .tm-map-fill {
   flex: 1;
   width: 100% !important;
@@ -1458,7 +1458,6 @@ select.input-field {
   z-index: 1;
 }
 
-/* راهنما پایین نقشه */
 .tm-map-hint {
   position: absolute;
   bottom: 0;
@@ -1476,9 +1475,7 @@ select.input-field {
   letter-spacing: 0.02em;
   pointer-events: none;
 }
-[data-theme="dark"] .tm-map-hint {
-  background: rgba(0,0,0,0.65);
-}
+[data-theme="dark"] .tm-map-hint { background: rgba(0,0,0,0.65); }
 
 /* ─── آیکون‌های دکل روی نقشه ─── */
 .tower-icon-html {
@@ -1517,7 +1514,6 @@ select.input-field {
   50%       { box-shadow: 0 0 0 6px rgba(181,42,30,0), 0 2px 8px rgba(0,0,0,0.3); }
 }
 
-/* ─── پاپ‌آپ نقشه ─── */
 .tower-popup-content {
   font-family: var(--font-body);
   direction: rtl;
@@ -1533,15 +1529,15 @@ select.input-field {
   margin-bottom: 4px;
 }
 
-/* ─── تب گزارش‌ها ─── */
+/* ─── تب گزارش‌ها — ادغام‌شده ─── */
 .tm-reports-view {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   animation: fadeIn 0.2s ease;
+  min-height: 0;
 }
 
-/* کارت‌های KPI */
 .tm-kpi-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1564,31 +1560,11 @@ select.input-field {
   transform: translateY(-1px);
 }
 
-.tm-kpi-icon {
-  font-size: 1.8rem;
-  line-height: 1;
-  flex-shrink: 0;
-}
+.tm-kpi-icon { font-size: 1.8rem; line-height: 1; flex-shrink: 0; }
+.tm-kpi-body { display: flex; flex-direction: column; gap: 2px; }
+.tm-kpi-val  { font-size: var(--text-xl); font-weight: 700; line-height: 1; }
+.tm-kpi-label { font-size: var(--text-xs); color: var(--color-text-muted); font-weight: 600; }
 
-.tm-kpi-body {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.tm-kpi-val {
-  font-size: var(--text-xl);
-  font-weight: 700;
-  line-height: 1;
-}
-
-.tm-kpi-label {
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-  font-weight: 600;
-}
-
-/* رنگ‌بندی کارت‌های KPI */
 .tm-kpi-primary .tm-kpi-val { color: var(--color-primary); }
 .tm-kpi-warning .tm-kpi-val { color: var(--color-error); }
 .tm-kpi-info    .tm-kpi-val { color: #1d6fa4; }
@@ -1599,36 +1575,98 @@ select.input-field {
 .tm-kpi-info    { border-top: 3px solid #1d6fa4; }
 .tm-kpi-success { border-top: 3px solid var(--color-success); }
 
-/* فیلتر گزارش */
+/* ─── فیلتر گزارش — ادغام‌شده ─── */
 .tm-reports-filter {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: var(--space-4) var(--space-5);
+  padding: 12px 16px;
   box-shadow: var(--shadow-sm);
 }
+.tm-reports-filter .field-label {
+  font-size: var(--text-xs);
+  margin-bottom: 4px;
+}
+.tm-reports-filter .input-field {
+  padding: 8px 10px;
+  font-size: var(--text-sm);
+}
+.tm-reports-filter .form-grid {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
 
-/* ردیف جداول — دو ستون */
+/* ─── جداول گزارش — ادغام‌شده ─── */
 .tm-reports-tables {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-4);
-  min-height: 0;
+  align-items: start;
 }
 
+/* ─── بلوک گزارش — ادغام‌شده ─── */
 .tm-report-block {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  min-height: 380px;
-  max-height: calc(100vh - 480px);
+  overflow: auto;
+  display: block;
+  min-height: 420px;
+  max-height: calc(100vh - 340px);
 }
+.tm-report-block table {
+  min-width: 760px;
+}
+.tm-report-block .space-table,
+.tm-report-block table {
+  width: max-content;
+  min-width: 100%;
+}
+.tm-report-block td,
+.tm-report-block th {
+  white-space: nowrap;
+}
+.tm-report-block,
+.tm-report-block * {
+  color: var(--color-text);
+}
+.tm-report-block h3,
+.tm-report-block h4,
+.tm-report-block h5,
+.tm-report-block th {
+  color: var(--color-text) !important;
+}
+.tm-report-block td {
+  color: var(--color-text) !important;
+  font-weight: 500;
+}
+.tm-report-block small,
+.tm-report-block .muted,
+.tm-report-block .text-muted {
+  color: var(--color-text-muted) !important;
+}
+.tm-report-block table {
+  background: var(--color-surface);
+}
+.tm-report-block thead tr,
+.tm-report-block thead th {
+  background: var(--color-surface-offset) !important;
+  color: var(--color-text) !important;
+  border-bottom: 1px solid var(--color-border) !important;
+}
+.tm-report-block tbody tr {
+  background: var(--color-surface) !important;
+}
+.tm-report-block tbody tr:nth-child(even) {
+  background: var(--color-surface-2) !important;
+}
+.tm-report-block tbody td {
+  border-bottom: 1px solid var(--color-divider) !important;
+}
+.tm-report-block button { color: inherit; }
 
-/* ─── TowerDetail — جزئیات دکل در پنل راست ─── */
+/* ─── جزئیات دکل — ادغام‌شده ─── */
 .tower-detail-empty {
   display: flex;
   flex-direction: column;
@@ -1648,11 +1686,26 @@ select.input-field {
   opacity: 0.4;
 }
 
+/* grid دو ستونه — نسخه نهایی ادغام‌شده */
 .tower-detail-body {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
   animation: slideInRight 0.2s ease;
+}
+.tower-detail-title,
+.tower-detail-line-title,
+.tower-history-title,
+.tower-open-plans,
+.tower-duplicate-warning,
+.tower-add-btn,
+.tower-detail-empty {
+  grid-column: 1 / -1;
+}
+.tower-history-card,
+.tower-plan-card,
+.tower-info-row {
+  min-width: 0;
 }
 
 .tower-detail-title {
@@ -1769,87 +1822,7 @@ select.input-field {
   justify-content: center;
 }
 
-/* ==========================================================
-   TOWER MANAGEMENT — RESPONSIVE
-   ========================================================== */
-
-@media (max-width: 1280px) {
-  .tm-map-body {
-    grid-template-columns: 210px 1fr 230px;
-  }
-  .tm-kpi-row {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 960px) {
-  .tm-map-body {
-    grid-template-columns: 1fr;
-    grid-template-rows: 200px 420px 200px;
-    height: auto;
-  }
-  .tm-map-wrap {
-    height: 420px;
-    min-height: 420px;
-  }
-  .tm-map-fill {
-    min-height: 420px !important;
-  }
-  .tm-reports-tables {
-    grid-template-columns: 1fr;
-  }
-  .tm-report-block {
-    max-height: 400px;
-  }
-  .tm-kpi-row {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 600px) {
-  .tm-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .tm-map-body {
-    grid-template-rows: 160px 320px 180px;
-  }
-  .tm-map-wrap {
-    height: 320px;
-    min-height: 320px;
-  }
-  .tm-map-fill {
-    min-height: 320px !important;
-  }
-  .tm-kpi-row {
-    grid-template-columns: 1fr 1fr;
-  }
-  .tm-tab {
-    padding: 8px 12px;
-    font-size: var(--text-xs);
-  }
-}
-/* ===== Tower management refinements v2 ===== */
-
-.tm-map-toolbar {
-  padding: 10px 14px;
-}
-
-.tm-map-toolbar .field-label {
-  font-size: var(--text-xs);
-  margin-bottom: 4px;
-}
-
-.tm-map-toolbar .input-field {
-  padding: 8px 10px;
-  font-size: var(--text-sm);
-}
-
-.tm-map-toolbar .form-grid {
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 10px;
-}
-
+/* ─── Shell layout ─── */
 .tm-map-shell {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(260px, 28%);
@@ -1865,9 +1838,7 @@ select.input-field {
   min-width: 0;
 }
 
-.tm-control-rail {
-  min-width: 0;
-}
+.tm-control-rail { min-width: 0; }
 
 .tm-side-compact {
   height: calc(58vh + 220px + var(--space-3));
@@ -1883,133 +1854,9 @@ select.input-field {
   min-height: 220px;
 }
 
-.tm-detail-scroll {
-  max-height: 320px;
-}
+.tm-detail-scroll { max-height: 320px; }
 
-.tm-reports-view {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  animation: fadeIn 0.2s ease;
-  min-height: 0;
-}
-
-.tm-reports-filter {
-  padding: 12px 16px;
-}
-
-.tm-reports-filter .field-label {
-  font-size: var(--text-xs);
-  margin-bottom: 4px;
-}
-
-.tm-reports-filter .input-field {
-  padding: 8px 10px;
-  font-size: var(--text-sm);
-}
-
-.tm-reports-filter .form-grid {
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 10px;
-}
-
-.tm-reports-tables {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-4);
-  align-items: start;
-}
-
-.tm-report-block {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  overflow: auto;
-  display: block;
-  min-height: 420px;
-  max-height: calc(100vh - 340px);
-}
-
-.tm-report-block table {
-  min-width: 760px;
-}
-
-.tm-report-block .space-table,
-.tm-report-block table {
-  width: max-content;
-  min-width: 100%;
-}
-
-.tm-report-block td,
-.tm-report-block th {
-  white-space: nowrap;
-}
-
-.tower-detail-body {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-3);
-}
-
-.tower-detail-title,
-.tower-detail-line-title,
-.tower-history-title,
-.tower-open-plans,
-.tower-duplicate-warning,
-.tower-add-btn,
-.tower-detail-empty {
-  grid-column: 1 / -1;
-}
-
-.tower-history-card,
-.tower-plan-card,
-.tower-info-row {
-  min-width: 0;
-}
-
-@media (max-width: 1180px) {
-  .tm-map-shell {
-    grid-template-columns: 1fr;
-  }
-
-  .tm-side-compact {
-    height: auto;
-    max-height: none;
-  }
-}
-
-@media (max-width: 960px) {
-  .tm-map-main {
-    grid-template-rows: 420px auto;
-  }
-
-  .tm-detail-scroll {
-    max-height: 380px;
-  }
-
-  .tm-reports-tables {
-    grid-template-columns: 1fr;
-  }
-
-  .tower-detail-body {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 600px) {
-  .tm-map-main {
-    grid-template-rows: 320px auto;
-  }
-
-  .tm-map-toolbar .form-grid,
-  .tm-reports-filter .form-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-/* ===== Tower filter fix ===== */
-
+/* ─── فیلتر کارت ─── */
 .tm-filter-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -2017,10 +1864,7 @@ select.input-field {
   padding: 12px 14px;
   box-shadow: var(--shadow-sm);
 }
-
-.tm-filter-card.compact {
-  padding: 10px 12px;
-}
+.tm-filter-card.compact { padding: 10px 12px; }
 
 .tm-filter-head {
   display: flex;
@@ -2030,47 +1874,36 @@ select.input-field {
   margin-bottom: 10px;
   flex-wrap: wrap;
 }
-
 .tm-filter-title {
   margin: 0;
   font-size: var(--text-sm);
   font-weight: 700;
   color: var(--color-text);
 }
-
 .tm-filter-actions {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-
-.tm-filter-reset {
-  padding: 6px 12px;
-  font-size: var(--text-xs);
-}
+.tm-filter-reset { padding: 6px 12px; font-size: var(--text-xs); }
 
 .tm-filter-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 10px 12px;
 }
-
 .tm-filter-grid.compact {
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 8px 10px;
 }
 
-.tm-filter-card .form-group {
-  gap: 4px;
-}
-
+.tm-filter-card .form-group { gap: 4px; }
 .tm-filter-card .field-label {
   font-size: 12px;
   margin-bottom: 0;
   color: var(--color-text-muted);
   font-weight: 700;
 }
-
 .tm-filter-card .input-field {
   height: 36px;
   min-height: 36px;
@@ -2080,11 +1913,7 @@ select.input-field {
   color: var(--color-text);
   border: 1px solid var(--color-border);
 }
-
-.tm-filter-card input.input-field::placeholder {
-  color: var(--color-text-faint);
-}
-
+.tm-filter-card input.input-field::placeholder { color: var(--color-text-faint); }
 .tm-filter-card select.input-field {
   appearance: none;
   -webkit-appearance: none;
@@ -2096,12 +1925,10 @@ select.input-field {
   padding-right: 10px;
   line-height: 1.4;
 }
-
 .tm-filter-card select.input-field option {
   background: var(--color-surface);
   color: var(--color-text);
 }
-
 .tm-filter-card select.input-field:focus,
 .tm-filter-card input.input-field:focus {
   background: var(--color-surface);
@@ -2110,41 +1937,12 @@ select.input-field {
   box-shadow: 0 0 0 3px var(--color-primary-faint);
 }
 
-@media (max-width: 900px) {
-  .tm-filter-grid,
-  .tm-filter-grid.compact {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 560px) {
-  .tm-filter-head {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .tm-filter-actions {
-    width: 100%;
-    justify-content: stretch;
-  }
-
-  .tm-filter-actions button {
-    flex: 1;
-  }
-
-  .tm-filter-grid,
-  .tm-filter-grid.compact {
-    grid-template-columns: 1fr;
-  }
-}
-/* ===== Reports switcher + contrast fix ===== */
-
+/* ─── سوئیچر گزارش ─── */
 .tm-report-switcher {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
 }
-
 .tm-report-switch {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -2154,80 +1952,75 @@ select.input-field {
   font-size: var(--text-sm);
   font-weight: 700;
 }
-
 .tm-report-switch:hover {
   background: var(--color-surface-offset);
   border-color: var(--color-primary);
   color: var(--color-primary);
 }
-
 .tm-report-switch.active {
   background: var(--color-primary-highlight);
   color: var(--color-primary);
   border-color: var(--color-primary);
 }
+.tm-report-single { min-height: 0; }
+.tm-report-block-single { max-height: calc(100vh - 300px); }
 
-.tm-report-single {
-  min-height: 0;
+/* ==========================================================
+   TOWER MANAGEMENT — RESPONSIVE
+   ========================================================== */
+
+@media (max-width: 1280px) {
+  .tm-map-body { grid-template-columns: 210px 1fr 230px; }
+  .tm-kpi-row  { grid-template-columns: repeat(2, 1fr); }
 }
 
-.tm-report-block-single {
-  max-height: calc(100vh - 300px);
+@media (max-width: 1180px) {
+  .tm-map-shell { grid-template-columns: 1fr; }
+  .tm-side-compact { height: auto; max-height: none; }
 }
 
-.tm-report-block,
-.tm-report-block * {
-  color: var(--color-text);
+@media (max-width: 960px) {
+  .tm-map-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: 200px 420px 200px;
+    height: auto;
+  }
+  .tm-map-wrap  { height: 420px; min-height: 420px; }
+  .tm-map-fill  { min-height: 420px !important; }
+  .tm-map-main  { grid-template-rows: 420px auto; }
+  .tm-detail-scroll { max-height: 380px; }
+  .tm-reports-tables { grid-template-columns: 1fr; }
+  .tm-report-block   { max-height: 400px; }
+  .tm-kpi-row        { grid-template-columns: repeat(2, 1fr); }
+  .tower-detail-body { grid-template-columns: 1fr; }
 }
 
-.tm-report-block h3,
-.tm-report-block h4,
-.tm-report-block h5,
-.tm-report-block th {
-  color: var(--color-text) !important;
-}
-
-.tm-report-block td {
-  color: var(--color-text) !important;
-  font-weight: 500;
-}
-
-.tm-report-block small,
-.tm-report-block .muted,
-.tm-report-block .text-muted {
-  color: var(--color-text-muted) !important;
-}
-
-.tm-report-block table {
-  background: var(--color-surface);
-}
-
-.tm-report-block thead tr,
-.tm-report-block thead th {
-  background: var(--color-surface-offset) !important;
-  color: var(--color-text) !important;
-  border-bottom: 1px solid var(--color-border) !important;
-}
-
-.tm-report-block tbody tr {
-  background: var(--color-surface) !important;
-}
-
-.tm-report-block tbody tr:nth-child(even) {
-  background: var(--color-surface-2) !important;
-}
-
-.tm-report-block tbody td {
-  border-bottom: 1px solid var(--color-divider) !important;
-}
-
-.tm-report-block button {
-  color: inherit;
+@media (max-width: 900px) {
+  .tm-filter-grid,
+  .tm-filter-grid.compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 600px) {
-  .tm-report-switcher {
-    display: grid;
+  .tm-header { flex-direction: column; align-items: flex-start; }
+  .tm-map-body { grid-template-rows: 160px 320px 180px; }
+  .tm-map-wrap { height: 320px; min-height: 320px; }
+  .tm-map-fill { min-height: 320px !important; }
+  .tm-map-main { grid-template-rows: 320px auto; }
+  .tm-kpi-row  { grid-template-columns: 1fr 1fr; }
+  .tm-tab      { padding: 8px 12px; font-size: var(--text-xs); }
+  .tm-report-switcher { display: grid; grid-template-columns: 1fr 1fr; }
+  .tm-map-toolbar .form-grid,
+  .tm-reports-filter .form-grid {
     grid-template-columns: 1fr 1fr;
   }
+}
+
+@media (max-width: 560px) {
+  .tm-filter-head { flex-direction: column; align-items: stretch; }
+  .tm-filter-actions { width: 100%; justify-content: stretch; }
+  .tm-filter-actions button { flex: 1; }
+  .tm-filter-grid,
+  .tm-filter-grid.compact { grid-template-columns: 1fr; }
 }
