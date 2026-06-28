@@ -1,0 +1,139 @@
+/* ==========================================================
+   DASHBOARD — db-* classes
+   ========================================================== */
+
+.db-root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  animation: fadeIn 0.25s ease;
+}
+
+/* ─── KPI row ─── */
+.db-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+}
+
+.db-kpi-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-base), transform var(--transition-base);
+}
+.db-kpi-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.db-kpi-icon {
+  font-size: 2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.db-kpi-val {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.db-kpi-label {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.db-kpi-primary { border-top: 3px solid var(--color-primary); }
+.db-kpi-primary .db-kpi-val { color: var(--color-primary); }
+
+.db-kpi-info    { border-top: 3px solid #1d6fa4; }
+.db-kpi-info .db-kpi-val    { color: #1d6fa4; }
+
+.db-kpi-success { border-top: 3px solid var(--color-success); }
+.db-kpi-success .db-kpi-val { color: var(--color-success); }
+
+.db-kpi-warning { border-top: 3px solid var(--color-warning); }
+.db-kpi-warning .db-kpi-val { color: var(--color-warning); }
+
+/* ─── Charts grid ─── */
+.db-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+/* نمودار عریض: کل ستون را می‌گیره */
+.db-chart-wide {
+  grid-column: span 3;
+}
+
+.db-chart-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-5) var(--space-5) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  transition: box-shadow var(--transition-base);
+}
+.db-chart-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.db-chart-title {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+/* ─── پوشش نمودار — ارتفاع صریح برای Chart.js responsive ─── */
+.db-chart-wrap {
+  position: relative;
+  width: 100%;
+  height: 280px;       /* Pie default */
+}
+
+.db-chart-wrap-bar {
+  height: 260px;       /* Bar کمی کوتاه‌تر کافیه */
+}
+
+/* Dark mode — رنگ متن legend و محورها */
+[data-theme="dark"] .db-chart-card {
+  background: var(--color-surface);
+}
+
+/* ==========================================================
+   RESPONSIVE
+   ========================================================== */
+
+@media (max-width: 1100px) {
+  .db-charts-grid { grid-template-columns: repeat(2, 1fr); }
+  .db-chart-wide  { grid-column: span 2; }
+  .db-kpi-row     { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 700px) {
+  .db-charts-grid { grid-template-columns: 1fr; }
+  .db-chart-wide  { grid-column: span 1; }
+  .db-kpi-row     { grid-template-columns: repeat(2, 1fr); }
+  .db-chart-wrap  { height: 240px; }
+  .db-chart-wrap-bar { height: 220px; }
+}
+
+@media (max-width: 480px) {
+  .db-kpi-row { grid-template-columns: 1fr 1fr; }
+}
