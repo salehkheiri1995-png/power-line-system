@@ -1,282 +1,187 @@
 import React, { useState } from 'react';
 
 function FilterPanel({ options, onFilter, onClear, records }) {
-  // State اصلی فیلترها
   const [filters, setFilters] = useState({
-    program_type: '', code: '', voltage_level: '', location: '', supervisor: '',
-    dateFromYear: '', dateFromMonth: '', dateFromDay: '',
-    dateToYear: '', dateToMonth: '', dateToDay: ''
+    program_type:'', code:'', voltage_level:'', location:'', supervisor:'',
+    dateFromYear:'', dateFromMonth:'', dateFromDay:'',
+    dateToYear:'',   dateToMonth:'',   dateToDay:'',
   });
   const [selectedLines, setSelectedLines] = useState([]);
   const [selectedDescs, setSelectedDescs] = useState([]);
-  const [lineSearch, setLineSearch] = useState('');
-  const [descSearch, setDescSearch] = useState('');
+  const [lineSearch,    setLineSearch]    = useState('');
+  const [descSearch,    setDescSearch]    = useState('');
+  const [open, setOpen] = useState(true);
 
-  if (!options) return <div className="glass-card" style={{ padding: '20px' }}>🛰️ در حال بارگذاری فیلترها...</div>;
+  if (!options) return (
+    <div className="fp-root">
+      <div className="fp-loading">⌛ در حال بارگذاری فیلترها...</div>
+    </div>
+  );
 
-  // سال‌های موجود در داده‌ها
   const years = Array.from(new Set(
-    (records || []).flatMap(r => r.execution_date ? [parseInt(r.execution_date.split('/')[0])] : [])
-  )).sort((a, b) => b - a);
+    (records||[]).flatMap(r => r.execution_date ? [parseInt(r.execution_date.split('/')[0])] : [])
+  )).sort((a,b) => b-a);
 
-  const months = [1,2,3,4,5,6,7,8,9,10,11,12];
-  const persianMonths = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+  const MONTHS = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+  const DAYS  = Array.from({length:31}, (_,i) => i+1);
 
-  // هندلرهای انتخاب
-  const handleLineToggle = (line) => {
-    setSelectedLines(prev => prev.includes(line) ? prev.filter(l => l !== line) : [...prev, line]);
-  };
-  const handleDescToggle = (desc) => {
-    setSelectedDescs(prev => prev.includes(desc) ? prev.filter(d => d !== desc) : [...prev, desc]);
-  };
+  const filteredLines = (options.line_names||[]).filter(l => l.includes(lineSearch));
+  const filteredDescs = (options.work_descriptions||[]).filter(d => d.includes(descSearch));
 
-  // فیلترشونده‌ها با جستجو
-  const filteredLines = (options.line_names || []).filter(l => l.includes(lineSearch));
-  const filteredDescs = (options.work_descriptions || []).filter(d => d.includes(descSearch));
+  const toggle = (arr, set, val) =>
+    set(prev => prev.includes(val) ? prev.filter(x=>x!==val) : [...prev, val]);
 
-  const apply = () => {
-    onFilter({
-      ...filters,
-      line_names: selectedLines,
-      work_descriptions: selectedDescs,
-    });
-  };
+  const apply = () => onFilter({ ...filters, line_names:selectedLines, work_descriptions:selectedDescs });
 
   const clearAll = () => {
-    setFilters({
-      program_type: '', code: '', voltage_level: '', location: '', supervisor: '',
-      dateFromYear: '', dateFromMonth: '', dateFromDay: '',
-      dateToYear: '', dateToMonth: '', dateToDay: ''
-    });
-    setSelectedLines([]);
-    setSelectedDescs([]);
-    setLineSearch('');
-    setDescSearch('');
-    if (onClear) onClear();
+    setFilters({ program_type:'',code:'',voltage_level:'',location:'',supervisor:'',
+                 dateFromYear:'',dateFromMonth:'',dateFromDay:'',
+                 dateToYear:'',  dateToMonth:'',  dateToDay:'' });
+    setSelectedLines([]); setSelectedDescs([]);
+    setLineSearch('');    setDescSearch('');
+    onClear?.();
   };
 
-  // --- استایل‌های inline برای المان‌های تیره (در کنار CSS) ---
-  const selectStyle = {
-    background: 'rgba(10, 15, 25, 0.8)',
-    color: '#e0f0ff',
-    border: '1px solid rgba(0, 240, 255, 0.3)',
-    borderRadius: '8px',
-    padding: '8px 12px',
-    backdropFilter: 'blur(4px)',
-    transition: 'all 0.2s',
-    outline: 'none',
-  };
-  const inputStyle = {
-    ...selectStyle,
-    width: '100%',
-  };
+  const hasActive = selectedLines.length || selectedDescs.length ||
+    Object.values(filters).some(v => v !== '');
 
   return (
-    <div className="glass-card" style={{ padding: '25px', marginBottom: '25px' }}>
-      <h4 style={{ color: 'var(--accent-cyan)', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <span>🔍</span> فیلترهای پیشرفته
-      </h4>
+    <div className="fp-root">
 
-      {/* ردیف اول: فیلترهای اصلی */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '15px', marginBottom: '20px' }}>
-        <div>
-          <label style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '5px', display: 'block' }}>نوع برنامه</label>
-          <select style={selectStyle} value={filters.program_type} onChange={e => setFilters({...filters, program_type: e.target.value})}>
-            <option value="">همه</option>
-            {(options.program_types || []).map(t => <option key={t}>{t}</option>)}
-          </select>
+      {/* ─── header bar ─── */}
+      <div className="fp-header" onClick={() => setOpen(o=>!o)}>
+        <div className="fp-header-left">
+          <span className="fp-header-icon">🔍</span>
+          <span className="fp-header-title">فیلترهای پیشرفته</span>
+          {hasActive && <span className="fp-badge">{selectedLines.length + selectedDescs.length + Object.values(filters).filter(v=>v!=='').length}</span>}
         </div>
-        <div>
-          <label style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '5px', display: 'block' }}>کد</label>
-          <select style={selectStyle} value={filters.code} onChange={e => setFilters({...filters, code: e.target.value})}>
-            <option value="">همه</option>
-            {(options.codes || []).map(c => <option key={c}>{c}</option>)}
-          </select>
-        </div>
-        <div>
-          <label style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '5px', display: 'block' }}>سطح ولتاژ</label>
-          <select style={selectStyle} value={filters.voltage_level} onChange={e => setFilters({...filters, voltage_level: e.target.value})}>
-            <option value="">همه</option>
-            {(options.voltage_levels || []).map(v => <option key={v}>{v}</option>)}
-          </select>
-        </div>
-        <div>
-          <label style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '5px', display: 'block' }}>موقعیت</label>
-          <select style={selectStyle} value={filters.location} onChange={e => setFilters({...filters, location: e.target.value})}>
-            <option value="">همه</option>
-            {(options.locations || []).map(l => <option key={l}>{l}</option>)}
-          </select>
-        </div>
-        <div>
-          <label style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '5px', display: 'block' }}>سرپرست</label>
-          <select style={selectStyle} value={filters.supervisor} onChange={e => setFilters({...filters, supervisor: e.target.value})}>
-            <option value="">همه</option>
-            {(options.supervisors || []).map(s => <option key={s}>{s}</option>)}
-          </select>
-        </div>
+        <button className="fp-toggle-btn" aria-label="باز/بسته">
+          <span className={`fp-chevron${open?' fp-chevron-up':''}`}>▾</span>
+        </button>
       </div>
 
-      {/* ردیف تاریخ */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '20px' }}>
-        <div>
-          <label style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '5px', display: 'block' }}>📅 از تاریخ</label>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <select style={{...selectStyle, flex:1}} value={filters.dateFromYear} onChange={e => setFilters({...filters, dateFromYear: e.target.value})}>
-              <option value="">سال</option>
-              {years.map(y => <option key={y} value={y}>{y}</option>)}
-            </select>
-            <select style={{...selectStyle, flex:1}} value={filters.dateFromMonth} onChange={e => setFilters({...filters, dateFromMonth: e.target.value})}>
-              <option value="">ماه</option>
-              {months.map(m => <option key={m} value={m}>{persianMonths[m-1]}</option>)}
-            </select>
-            <select style={{...selectStyle, flex:1}} value={filters.dateFromDay} onChange={e => setFilters({...filters, dateFromDay: e.target.value})}>
-              <option value="">روز</option>
-              {Array.from({length:31}, (_,i)=>i+1).map(d => <option key={d} value={d}>{d}</option>)}
-            </select>
-          </div>
-        </div>
-        <div>
-          <label style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '5px', display: 'block' }}>📅 تا تاریخ</label>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <select style={{...selectStyle, flex:1}} value={filters.dateToYear} onChange={e => setFilters({...filters, dateToYear: e.target.value})}>
-              <option value="">سال</option>
-              {years.map(y => <option key={y} value={y}>{y}</option>)}
-            </select>
-            <select style={{...selectStyle, flex:1}} value={filters.dateToMonth} onChange={e => setFilters({...filters, dateToMonth: e.target.value})}>
-              <option value="">ماه</option>
-              {months.map(m => <option key={m} value={m}>{persianMonths[m-1]}</option>)}
-            </select>
-            <select style={{...selectStyle, flex:1}} value={filters.dateToDay} onChange={e => setFilters({...filters, dateToDay: e.target.value})}>
-              <option value="">روز</option>
-              {Array.from({length:31}, (_,i)=>i+1).map(d => <option key={d} value={d}>{d}</option>)}
-            </select>
-          </div>
-        </div>
-      </div>
+      {open && (
+        <div className="fp-body">
 
-      {/* ردیف نام خطوط و شرح کارها */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '20px', marginBottom: '20px' }}>
-        {/* نام خطوط */}
-        <div>
-          <label style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '5px', display: 'block' }}>🔌 نام خطوط</label>
-          <input
-            style={inputStyle}
-            placeholder="جستجوی نام خط..."
-            value={lineSearch}
-            onChange={e => setLineSearch(e.target.value)}
-          />
-          <div className="checklist-container" style={{
-            background: 'rgba(10,15,25,0.8)',
-            border: '1px solid rgba(0,240,255,0.3)',
-            borderRadius: '8px',
-            maxHeight: '150px',
-            overflowY: 'auto',
-            padding: '8px',
-            marginTop: '8px',
-            backdropFilter: 'blur(4px)',
-          }}>
-            {filteredLines.map(line => (
-              <label key={line} className="checklist-item" style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '4px 0',
-                cursor: 'pointer',
-                color: '#e0f0ff',
-              }}>
-                <input
-                  type="checkbox"
-                  checked={selectedLines.includes(line)}
-                  onChange={() => handleLineToggle(line)}
-                  style={{ accentColor: 'var(--accent-cyan)' }}
-                />
-                <span>{line}</span>
-              </label>
+          {/* ─── ردیف ۱: سلکت‌های اصلی ─── */}
+          <div className="fp-row fp-row-5">
+            {[
+              {label:'نوع برنامه', key:'program_type',  opts: options.program_types  ||[]},
+              {label:'کد',          key:'code',          opts: options.codes          ||[]},
+              {label:'سطح ولتاژ',  key:'voltage_level', opts: options.voltage_levels ||[]},
+              {label:'موقعیت',      key:'location',      opts: options.locations      ||[]},
+              {label:'سرپرست',      key:'supervisor',    opts: options.supervisors    ||[]},
+            ].map(({label,key,opts}) => (
+              <div key={key} className="fp-field">
+                <label className="fp-label">{label}</label>
+                <select
+                  className="fp-select"
+                  value={filters[key]}
+                  onChange={e => setFilters({...filters,[key]:e.target.value})}
+                >
+                  <option value="">— همه —</option>
+                  {opts.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
             ))}
-            {filteredLines.length === 0 && <div style={{ color: 'var(--text-secondary)', fontSize: '13px', padding: '10px' }}>موردی یافت نشد</div>}
           </div>
-          <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
-            <button className="btn-glow" style={{ padding: '6px 16px', fontSize: '13px' }} onClick={() => setSelectedLines(options.line_names || [])}>انتخاب همه</button>
-            <button style={{
-              background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.3)',
-              color: '#e0f0ff',
-              borderRadius: '20px',
-              padding: '6px 16px',
-              fontSize: '13px',
-              cursor: 'pointer'
-            }} onClick={() => setSelectedLines([])}>حذف همه</button>
-          </div>
-        </div>
 
-        {/* شرح کارها */}
-        <div>
-          <label style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '5px', display: 'block' }}>🔧 شرح کارها</label>
-          <input
-            style={inputStyle}
-            placeholder="جستجوی شرح کار..."
-            value={descSearch}
-            onChange={e => setDescSearch(e.target.value)}
-          />
-          <div className="checklist-container" style={{
-            background: 'rgba(10,15,25,0.8)',
-            border: '1px solid rgba(0,240,255,0.3)',
-            borderRadius: '8px',
-            maxHeight: '150px',
-            overflowY: 'auto',
-            padding: '8px',
-            marginTop: '8px',
-            backdropFilter: 'blur(4px)',
-          }}>
-            {filteredDescs.map(desc => (
-              <label key={desc} className="checklist-item" style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '4px 0',
-                cursor: 'pointer',
-                color: '#e0f0ff',
-              }}>
-                <input
-                  type="checkbox"
-                  checked={selectedDescs.includes(desc)}
-                  onChange={() => handleDescToggle(desc)}
-                  style={{ accentColor: 'var(--accent-cyan)' }}
-                />
-                <span>{desc}</span>
-              </label>
+          {/* ─── ردیف ۲: تاریخ ─── */}
+          <div className="fp-row fp-row-2">
+            {[{label:'📅 از تاریخ', pre:'dateFrom'}, {label:'📅 تا تاریخ', pre:'dateTo'}].map(({label,pre}) => (
+              <div key={pre} className="fp-field">
+                <label className="fp-label">{label}</label>
+                <div className="fp-date-row">
+                  <select className="fp-select" value={filters[pre+'Year']}  onChange={e=>setFilters({...filters,[pre+'Year']:e.target.value})}>
+                    <option value="">سال</option>
+                    {years.map(y=><option key={y} value={y}>{y}</option>)}
+                  </select>
+                  <select className="fp-select" value={filters[pre+'Month']} onChange={e=>setFilters({...filters,[pre+'Month']:e.target.value})}>
+                    <option value="">ماه</option>
+                    {MONTHS.map((m,i)=><option key={i+1} value={i+1}>{m}</option>)}
+                  </select>
+                  <select className="fp-select" value={filters[pre+'Day']}   onChange={e=>setFilters({...filters,[pre+'Day']:e.target.value})}>
+                    <option value="">روز</option>
+                    {DAYS.map(d=><option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+              </div>
             ))}
-            {filteredDescs.length === 0 && <div style={{ color: 'var(--text-secondary)', fontSize: '13px', padding: '10px' }}>موردی یافت نشد</div>}
           </div>
-          <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
-            <button className="btn-glow" style={{ padding: '6px 16px', fontSize: '13px' }} onClick={() => setSelectedDescs(options.work_descriptions || [])}>انتخاب همه</button>
-            <button style={{
-              background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.3)',
-              color: '#e0f0ff',
-              borderRadius: '20px',
-              padding: '6px 16px',
-              fontSize: '13px',
-              cursor: 'pointer'
-            }} onClick={() => setSelectedDescs([])}>حذف همه</button>
+
+          {/* ─── ردیف ۳: checklistها ─── */}
+          <div className="fp-row fp-row-2">
+
+            {/* نام خطوط */}
+            <div className="fp-field">
+              <label className="fp-label">🔌 نام خطوط
+                {selectedLines.length > 0 &&
+                  <span className="fp-badge fp-badge-sm">{selectedLines.length}</span>}
+              </label>
+              <input className="fp-input" placeholder="جستجو..."
+                value={lineSearch} onChange={e=>setLineSearch(e.target.value)} />
+              <div className="fp-checklist">
+                {filteredLines.length === 0
+                  ? <div className="fp-empty">موردی یافت نشد</div>
+                  : filteredLines.map(line => (
+                    <label key={line} className={`fp-check-item${selectedLines.includes(line)?' fp-check-item--active':''}` }>
+                      <input type="checkbox" className="fp-checkbox"
+                        checked={selectedLines.includes(line)}
+                        onChange={()=>toggle(selectedLines,setSelectedLines,line)} />
+                      <span>{line}</span>
+                    </label>
+                  ))}
+              </div>
+              <div className="fp-checklist-actions">
+                <button className="fp-action-btn fp-action-btn--primary"
+                  onClick={()=>setSelectedLines(options.line_names||[])}>✓ همه</button>
+                <button className="fp-action-btn"
+                  onClick={()=>setSelectedLines([])}>× حذف</button>
+              </div>
+            </div>
+
+            {/* شرح کارها */}
+            <div className="fp-field">
+              <label className="fp-label">🔧 شرح کارها
+                {selectedDescs.length > 0 &&
+                  <span className="fp-badge fp-badge-sm">{selectedDescs.length}</span>}
+              </label>
+              <input className="fp-input" placeholder="جستجو..."
+                value={descSearch} onChange={e=>setDescSearch(e.target.value)} />
+              <div className="fp-checklist">
+                {filteredDescs.length === 0
+                  ? <div className="fp-empty">موردی یافت نشد</div>
+                  : filteredDescs.map(desc => (
+                    <label key={desc} className={`fp-check-item${selectedDescs.includes(desc)?' fp-check-item--active':''}`}>
+                      <input type="checkbox" className="fp-checkbox"
+                        checked={selectedDescs.includes(desc)}
+                        onChange={()=>toggle(selectedDescs,setSelectedDescs,desc)} />
+                      <span>{desc}</span>
+                    </label>
+                  ))}
+              </div>
+              <div className="fp-checklist-actions">
+                <button className="fp-action-btn fp-action-btn--primary"
+                  onClick={()=>setSelectedDescs(options.work_descriptions||[])}>✓ همه</button>
+                <button className="fp-action-btn"
+                  onClick={()=>setSelectedDescs([])}>× حذف</button>
+              </div>
+            </div>
+          </div>
+
+          {/* ─── دکمه‌ها ─── */}
+          <div className="fp-actions">
+            <button className="fp-btn fp-btn--primary" onClick={apply}>
+              <span>🚀</span> اعمال فیلتر
+            </button>
+            {hasActive && (
+              <button className="fp-btn fp-btn--ghost" onClick={clearAll}>
+                <span>🗑️</span> پاک کردن
+              </button>
+            )}
           </div>
         </div>
-      </div>
-
-      {/* دکمه‌های اعمال و پاک کردن */}
-      <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
-        <button className="btn-glow" onClick={apply}>🚀 اعمال فیلتر</button>
-        <button style={{
-          background: 'transparent',
-          border: '1px solid rgba(255,255,255,0.3)',
-          color: '#e0f0ff',
-          borderRadius: '30px',
-          padding: '10px 24px',
-          cursor: 'pointer',
-          fontSize: '14px',
-          backdropFilter: 'blur(4px)',
-        }} onClick={clearAll}>🗑️ پاک کردن فیلترها</button>
-      </div>
+      )}
     </div>
   );
 }
