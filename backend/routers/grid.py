@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import date, timedelta
 
-from database import SessionLocal
+from database import get_db
 from models import (
     Line,
     Tower,
@@ -48,14 +48,6 @@ from auth import get_current_user, get_current_admin_user
 router = APIRouter(prefix="/api/grid", tags=["grid"])
 
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
 # ======================== Business helpers ========================
 
 def ensure_tower_number_unique(db: Session, line_id: str, number: int, tower_id: Optional[str] = None):
@@ -80,7 +72,6 @@ def check_tower_last_inspection(tower: Tower):
     if tower.last_inspection_date is not None:
         delta = date.today() - tower.last_inspection_date
         if delta.days > 365 * 2:
-            # این فقط هشدار منطقی است، مانع ذخیره نمی‌شود
             return {
                 "warning": "LastInspectionDate for this tower is older than 2 years",
                 "days_since_last_inspection": delta.days,
@@ -537,7 +528,6 @@ def create_inspection(
     db_insp = Inspection(**insp.model_dump())
     db.add(db_insp)
 
-    # به‌روزرسانی تاریخ آخرین بازرسی خط/دکل
     if insp.tower_id:
         tower = db.query(Tower).filter(Tower.id == insp.tower_id).first()
         if tower and insp.inspection_date:
@@ -570,7 +560,6 @@ def update_inspection(
     for k, v in data.items():
         setattr(db_insp, k, v)
 
-    # بروزرسانی تاریخ آخرین بازرسی
     if db_insp.tower_id:
         tower = db.query(Tower).filter(Tower.id == db_insp.tower_id).first()
         if tower and db_insp.inspection_date:

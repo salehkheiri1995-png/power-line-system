@@ -1,22 +1,21 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from database import SessionLocal
+from database import get_db
 from models import Line, Tower, MaintenanceRecord, PlannedTask, PowerLineRecord, User
 from auth import get_current_user, get_current_admin_user
 from pydantic import BaseModel
 from datetime import datetime, timedelta
+from uuid import uuid4
 import re
 
+try:
+    import jdatetime
+    HAS_JDATETIME = True
+except ImportError:
+    HAS_JDATETIME = False
+
 router = APIRouter(prefix="/api/lines-towers", tags=["lines-towers"])
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 # ========== Schemas ==========
@@ -42,7 +41,6 @@ class TowerSchema(BaseModel):
     height: float = 40
     last_maintenance: Optional[str] = None
     next_maintenance: Optional[str] = None
-    # فیلدهای GPS
     latitude: Optional[float] = None
     longitude: Optional[float] = None
 
@@ -51,7 +49,6 @@ class TowerSchema(BaseModel):
 
 
 class TowerGpsUpdate(BaseModel):
-    """فقط برای آپدیت GPS دکل استفاده می‌شود"""
     latitude: Optional[float] = None
     longitude: Optional[float] = None
 
@@ -102,45 +99,107 @@ def normalize_date_str(s: str) -> Optional[str]:
     if not s:
         return None
     s = s.strip().replace('-', '/').replace('.', '/')
-    parts = list(filter(None, re.split(r"[\\/\\\\s]+", s)))
+    parts = list(filter(None, re.split(r'[/\\\s]+', s)))
     if len(parts) != 3:
         return None
     try:
         y, m, d = map(int, parts)
         return f"{y}/{m:02d}/{d:02d}"
-    except:
+    except Exception:
         return None
 
 
 def jalali_to_gregorian(date_str: str) -> Optional[datetime]:
+    """تبدیل تاریخ شمسی به میلادی با استفاده از jdatetime در صورت وجود"""
     date_str = normalize_date_str(date_str)
     if not date_str:
         return None
     try:
         y, m, d = map(int, date_str.split('/'))
-    except:
+    except Exception:
         return None
-    days = (y - 1) * 365 + ((y - 1) // 4)
-    if m <= 7:
-        days += (m - 1) * 31
+
+    if HAS_JDATETIME:
+        try:
+            jd = jdatetime.date(y, m, d)
+            gd = jd.togregorian()
+            return datetime(gd.year, gd.month, gd.day)
+        except Exception:
+            return None
     else:
-        days += 186 + (m - 7) * 30
-    days += d - 1
-    return datetime(622, 3, 19) + timedelta(days=days)
+        # الگوریتم تقریبی Borkowski برای زمانی که jdatetime نصب نیست
+        jy = y - 979
+        jm = m - 1
+        jd_val = d - 1
+        j_day_no = 365 * jy + (jy // 33) * 8 + (jy % 33 + 3) // 4
+        for i in range(jm):
+            j_day_no += [31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29][i]
+        j_day_no += jd_val
+        g_day_no = j_day_no + 79
+        gy = 1600 + 400 * (g_day_no // 146097)
+        g_day_no = g_day_no % 146097
+        leap = True
+        if g_day_no >= 36525:
+            g_day_no -= 1
+            gy += 100 * (g_day_no // 36524)
+            g_day_no = g_day_no % 36524
+            leap = False if g_day_no >= 365 else True
+            if g_day_no >= 365:
+                g_day_no += 1
+        gy += 4 * (g_day_no // 1461)
+        g_day_no %= 1461
+        if g_day_no >= 366:
+            leap = False
+            g_day_no -= 1
+            gy += g_day_no // 365
+            g_day_no = g_day_no % 365
+        g_days_in_month = [31, 29 if leap else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+        gmonth = 0
+        for i, days in enumerate(g_days_in_month):
+            if g_day_no < days:
+                gmonth = i + 1
+                break
+            g_day_no -= days
+        try:
+            return datetime(gy, gmonth, g_day_no + 1)
+        except Exception:
+            return None
 
 
 def gregorian_to_jalali(date: datetime) -> str:
-    days = (date - datetime(622, 3, 19)).days
-    y = 1 + days // 365
-    rem = days % 365
-    if rem < 186:
-        m = 1 + rem // 31
-        d = 1 + rem % 31
-    else:
-        rem -= 186
-        m = 7 + rem // 30
-        d = 1 + rem % 30
-    return f"{y}/{m:02d}/{d:02d}"
+    """تبدیل تاریخ میلادی به شمسی با استفاده از jdatetime در صورت وجود"""
+    if HAS_JDATETIME:
+        try:
+            jd = jdatetime.date.fromgregorian(date=date.date())
+            return f"{jd.year}/{jd.month:02d}/{jd.day:02d}"
+        except Exception:
+            pass
+    # fallback الگوریتم تقریبی
+    gy, gm, gd = date.year, date.month, date.day
+    g_d_no = 365 * gy + (gy + 3) // 4 - (gy + 99) // 100 + (gy + 399) // 400
+    for i in range(gm - 1):
+        g_d_no += [31, 28 + (1 if (gy % 4 == 0 and gy % 100 != 0) or gy % 400 == 0 else 0),
+                   31, 30, 31, 30, 31, 31, 30, 31, 30, 31][i]
+    g_d_no += gd - 1
+    j_d_no = g_d_no - 79
+    j_np = j_d_no // 12053
+    j_d_no %= 12053
+    jy = 979 + 33 * j_np + 4 * (j_d_no // 1461)
+    j_d_no %= 1461
+    if j_d_no >= 366:
+        jy += (j_d_no - 1) // 365
+        j_d_no = (j_d_no - 1) % 365
+    for i, v in enumerate([31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29]):
+        if j_d_no >= v:
+            j_d_no -= v
+        else:
+            return f"{jy}/{i + 1:02d}/{j_d_no + 1:02d}"
+    return f"{jy}/12/29"
+
+
+def make_record_id() -> str:
+    """ساخت ID یکتا و امن برای رکورد تعمیر"""
+    return 'rec_' + str(uuid4()).replace('-', '')[:16]
 
 
 # ========== توابع کمکی ==========
@@ -235,7 +294,6 @@ def update_tower_gps(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """آپدیت lat/lng دکل – کاربر عادی هم مجاز است"""
     tower = db.query(Tower).filter(Tower.id == tower_id).first()
     if not tower:
         raise HTTPException(status_code=404, detail="دکل یافت نشد")
@@ -282,7 +340,7 @@ def create_maintenance_record(
                 (plan.gregorian_date - (rec.gregorian_date or datetime.now())).days
             ) <= 30:
                 completed_rec = MaintenanceRecord(
-                    id=f"rec_{plan.id}",
+                    id=make_record_id(),
                     tower_id=plan.tower_id,
                     planned_task_id=plan.id,
                     date=plan.date,
@@ -342,7 +400,7 @@ def complete_planned_task(
     if not task:
         raise HTTPException(status_code=404)
     rec = MaintenanceRecord(
-        id=f"rec_{task.id}",
+        id=make_record_id(),
         tower_id=task.tower_id,
         planned_task_id=task.id,
         date=task.date,
@@ -454,7 +512,7 @@ def import_from_records(
                 greg = jalali_to_gregorian(rec.execution_date)
                 if greg:
                     mrec = MaintenanceRecord(
-                        id=f"rec_{db.query(MaintenanceRecord).count()}_{num}",
+                        id=make_record_id(),
                         tower_id=tower.id,
                         date=rec.execution_date,
                         gregorian_date=greg,
@@ -488,7 +546,7 @@ def complete_plans(
         task = db.query(PlannedTask).filter(PlannedTask.id == pid).first()
         if task:
             rec = MaintenanceRecord(
-                id=f"rec_{task.id}",
+                id=make_record_id(),
                 tower_id=task.tower_id,
                 planned_task_id=task.id,
                 date=task.date,
@@ -508,7 +566,7 @@ def complete_plans(
 
 
 def layout_towers(db):
-    """فقط دکل‌هایی که GPS ندارن رو layout می‌کنه"""
+    """فقط دکل‌هایی که GPS ندارند را layout می‌کند"""
     lines = db.query(Line).all()
     paths = [
         [60, 60, 840, 490],
@@ -529,9 +587,7 @@ def layout_towers(db):
             continue
         path = paths[idx % len(paths)]
         for i, tower in enumerate(towers):
-            # اگه GPS واقعی داره، x/y رو هم از روی lat/lng بپر
             if tower.latitude and tower.longitude and tower.latitude != 0:
-                # تبدیل معکوس GPS به x/y برای سازگاری با کد قدیمی
                 BOUNDS_LAT_MIN, BOUNDS_LAT_MAX = 36.5, 39.5
                 BOUNDS_LNG_MIN, BOUNDS_LNG_MAX = 45.5, 48.5
                 tower.x = round((tower.longitude - BOUNDS_LNG_MIN) / (BOUNDS_LNG_MAX - BOUNDS_LNG_MIN) * 900)
@@ -542,7 +598,7 @@ def layout_towers(db):
                 tower.y = round(path[1] + factor * (path[3] - path[1]))
 
 
-# ========== Stats & Utility ==========
+# ========== Stats ==========
 @router.get("/tower-stats")
 def tower_stats(
     db: Session = Depends(get_db),
@@ -599,7 +655,7 @@ def mark_tower_completed(
         plan_date = jalali_to_gregorian(plan.date)
         if plan_date and plan_date <= now + timedelta(days=30):
             rec = MaintenanceRecord(
-                id=f"rec_{plan.id}",
+                id=make_record_id(),
                 tower_id=tower.id,
                 planned_task_id=plan.id,
                 date=plan.date,
@@ -618,7 +674,7 @@ def mark_tower_completed(
 
     if not completed_plan_ids:
         rec = MaintenanceRecord(
-            id=f"rec_mark_{now.timestamp()}_{tower_id[-4:]}",
+            id=make_record_id(),
             tower_id=tower.id,
             date=today_shamsi,
             gregorian_date=now,

@@ -1,5 +1,5 @@
+import os
 from fastapi import FastAPI
-
 from fastapi.middleware.cors import CORSMiddleware
 from routers.items import router as items_router
 from routers.auth import router as auth_router
@@ -12,9 +12,18 @@ from auth import get_password_hash
 
 app = FastAPI(title="Power Line Data Management")
 
+# ======= CORS =======
+# در فایل .env مقدار ALLOWED_ORIGINS را تعریف کنید، مثلاً:
+# ALLOWED_ORIGINS=http://localhost:5173,http://192.168.1.10:5173
+_origins_env = os.getenv("ALLOWED_ORIGINS", "")
+allowed_origins = [o.strip() for o in _origins_env.split(",") if o.strip()]
+if not allowed_origins:
+    # فقط در محیط توسعه local اجازه می‌دهیم
+    allowed_origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -26,21 +35,34 @@ app.include_router(auth_router)
 app.include_router(analytics_router)
 app.include_router(grid_router)
 
-# ایجاد جداول و کاربر پیش‌فرض
+# ایجاد جداول
 Base.metadata.create_all(bind=engine)
 
 
 def init_admin():
-    db = SessionLocal()
-    if not db.query(User).filter(User.username == "admin").first():
-        admin_user = User(
-            username="admin",
-            hashed_password=get_password_hash("admin123"),
-            role="admin"
+    """ساخت کاربر ادمین پیش‌فرض - پسورد از env خوانده می‌شود"""
+    admin_password = os.getenv("POWER_LINE_ADMIN_PASSWORD")
+    if not admin_password:
+        import warnings
+        warnings.warn(
+            "متغیر POWER_LINE_ADMIN_PASSWORD تنظیم نشده است. "
+            "کاربر ادمین پیش‌فرض ساخته نمی‌شود. "
+            "لطفاً این متغیر را در .env تعریف کنید.",
+            stacklevel=2,
         )
-        db.add(admin_user)
-        db.commit()
-    db.close()
+        return
+    db = SessionLocal()
+    try:
+        if not db.query(User).filter(User.username == "admin").first():
+            admin_user = User(
+                username="admin",
+                hashed_password=get_password_hash(admin_password),
+                role="admin",
+            )
+            db.add(admin_user)
+            db.commit()
+    finally:
+        db.close()
 
 
 init_admin()

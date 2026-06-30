@@ -5,7 +5,7 @@ from auth import (
     verify_password, create_access_token, get_password_hash,
     get_current_user, get_current_admin_user
 )
-from database import SessionLocal
+from database import get_db
 from models import User
 from pydantic import BaseModel
 from typing import List, Optional
@@ -39,19 +39,14 @@ class UserUpdate(BaseModel):
     role: Optional[str] = None
     permissions: Optional[str] = None
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
 # ========== ورود ==========
 @router.post("/login", response_model=LoginResponse)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == form_data.username).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="نام کاربری یا رمز عبور اشتباه است")
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="حساب کاربری غیرفعال است")
     access_token = create_access_token(data={"sub": user.username, "role": user.role})
     return {
         "access_token": access_token,
@@ -59,23 +54,6 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         "role": user.role,
         "permissions": user.permissions,
     }
-
-# ========== ثبت‌نام (بدون احراز هویت) ==========
-@router.post("/register")
-def register(user_in: UserCreate, db: Session = Depends(get_db)):
-    existing = db.query(User).filter(User.username == user_in.username).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="این نام کاربری قبلاً ثبت شده است")
-    user = User(
-        username=user_in.username,
-        hashed_password=get_password_hash(user_in.password),
-        role="user",
-        permissions="dashboard,data",
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return {"message": "ثبت‌نام با موفقیت انجام شد"}
 
 # ========== اطلاعات کاربر فعلی ==========
 @router.get("/users/me")
@@ -129,6 +107,8 @@ def delete_user(user_id: int, db: Session = Depends(get_db), current_user: User 
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="کاربر یافت نشد")
+    if user.username == "admin":
+        raise HTTPException(status_code=400, detail="حذف کاربر ادمین اصلی مجاز نیست")
     db.delete(user)
     db.commit()
     return {"ok": True}

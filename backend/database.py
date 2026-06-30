@@ -13,3 +13,12 @@ engine = create_engine(
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+
+
+def get_db():
+    """تابع یکپارچه get_db برای استفاده در تمام روترها"""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
