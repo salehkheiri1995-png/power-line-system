@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Union, Dict, Any
 from datetime import date, timedelta
 
 from database import get_db
@@ -68,7 +68,7 @@ def validate_inspection_scope(tower_id: Optional[str], line_id: Optional[str]):
         raise HTTPException(status_code=400, detail="Exactly one of tower_id or line_id must be set")
 
 
-def check_tower_last_inspection(tower: Tower):
+def check_tower_last_inspection(tower: Tower) -> Optional[Dict[str, Any]]:
     if tower.last_inspection_date is not None:
         delta = date.today() - tower.last_inspection_date
         if delta.days > 365 * 2:
@@ -157,21 +157,22 @@ def create_tower(
     tower_id = tower.id or f"{tower.line_id}||{tower.number}"
     data = tower.model_dump()
     data["id"] = tower_id
-    db_tower = Tower(**data)
     validate_grounding_resistance(data.get("grounding_resistance_ohm"))
+    db_tower = Tower(**data)
     db.add(db_tower)
     db.commit()
     db.refresh(db_tower)
     return db_tower
 
 
-@router.put("/towers/{tower_id}", response_model=TowerSchema)
+@router.put("/towers/{tower_id}")
 def update_tower(
     tower_id: str,
     payload: TowerUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin_user),
 ):
+    """به‌روزرسانی دکل. در صورت وجود هشدار بازرسی، پاسخ شامل فیلد 'warning' خواهد بود."""
     db_tower = db.query(Tower).filter(Tower.id == tower_id).first()
     if not db_tower:
         raise HTTPException(status_code=404, detail="Tower not found")
@@ -191,7 +192,11 @@ def update_tower(
     db.refresh(db_tower)
 
     warning = check_tower_last_inspection(db_tower)
-    return {"tower": db_tower, "warning": warning}
+    # سریال‌سازی دستی تا از تعارض response_model اجتناب شود
+    tower_data = {c.name: getattr(db_tower, c.name) for c in db_tower.__table__.columns}
+    if warning:
+        tower_data["warning"] = warning
+    return tower_data
 
 
 @router.delete("/towers/{tower_id}")

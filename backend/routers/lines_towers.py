@@ -99,7 +99,7 @@ def normalize_date_str(s: str) -> Optional[str]:
     if not s:
         return None
     s = s.strip().replace('-', '/').replace('.', '/')
-    parts = list(filter(None, re.split(r'[/\\\s]+', s)))
+    parts = list(filter(None, re.split(r'[/\\\\\s]+', s)))
     if len(parts) != 3:
         return None
     try:
@@ -110,7 +110,7 @@ def normalize_date_str(s: str) -> Optional[str]:
 
 
 def jalali_to_gregorian(date_str: str) -> Optional[datetime]:
-    """تبدیل تاریخ شمسی به میلادی با استفاده از jdatetime در صورت وجود"""
+    """تبدیل تاریخ شمسی به میلادی"""
     date_str = normalize_date_str(date_str)
     if not date_str:
         return None
@@ -127,7 +127,6 @@ def jalali_to_gregorian(date_str: str) -> Optional[datetime]:
         except Exception:
             return None
     else:
-        # الگوریتم تقریبی Borkowski برای زمانی که jdatetime نصب نیست
         jy = y - 979
         jm = m - 1
         jd_val = d - 1
@@ -167,14 +166,13 @@ def jalali_to_gregorian(date_str: str) -> Optional[datetime]:
 
 
 def gregorian_to_jalali(date: datetime) -> str:
-    """تبدیل تاریخ میلادی به شمسی با استفاده از jdatetime در صورت وجود"""
+    """تبدیل تاریخ میلادی به شمسی"""
     if HAS_JDATETIME:
         try:
             jd = jdatetime.date.fromgregorian(date=date.date())
             return f"{jd.year}/{jd.month:02d}/{jd.day:02d}"
         except Exception:
             pass
-    # fallback الگوریتم تقریبی
     gy, gm, gd = date.year, date.month, date.day
     g_d_no = 365 * gy + (gy + 3) // 4 - (gy + 99) // 100 + (gy + 399) // 400
     for i in range(gm - 1):
@@ -198,7 +196,6 @@ def gregorian_to_jalali(date: datetime) -> str:
 
 
 def make_record_id() -> str:
-    """ساخت ID یکتا و امن برای رکورد تعمیر"""
     return 'rec_' + str(uuid4()).replace('-', '')[:16]
 
 
@@ -256,7 +253,7 @@ def create_line(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin_user),
 ):
-    db_line = Line(**line.dict())
+    db_line = Line(**line.model_dump())
     db.add(db_line)
     db.commit()
     return db_line
@@ -281,7 +278,7 @@ def create_tower(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin_user),
 ):
-    db_tower = Tower(**tower.dict())
+    db_tower = Tower(**tower.model_dump())
     db.add(db_tower)
     db.commit()
     return db_tower
@@ -325,7 +322,7 @@ def create_maintenance_record(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    db_rec = MaintenanceRecord(**rec.dict())
+    db_rec = MaintenanceRecord(**rec.model_dump())
     db.add(db_rec)
     db.commit()
 
@@ -384,7 +381,7 @@ def create_planned_task(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    db_task = PlannedTask(**task.dict())
+    db_task = PlannedTask(**task.model_dump())
     db.add(db_task)
     db.commit()
     return db_task
@@ -398,7 +395,7 @@ def complete_planned_task(
 ):
     task = db.query(PlannedTask).filter(PlannedTask.id == task_id).first()
     if not task:
-        raise HTTPException(status_code=404)
+        raise HTTPException(status_code=404, detail="برنامه یافت نشد")
     rec = MaintenanceRecord(
         id=make_record_id(),
         tower_id=task.tower_id,
@@ -449,7 +446,7 @@ def get_open_plans_for_line(
         PlannedTask.status == "planned",
     ).all()
 
-    grouped = {}
+    grouped: dict = {}
     for plan in plans:
         key = (
             plan.type or "",
@@ -496,7 +493,7 @@ def import_from_records(
         if not rec.line_name:
             continue
         line = get_or_create_line(
-            db, rec.line_name, int(rec.voltage_level) if rec.voltage_level else 0
+            db, rec.line_name, int(rec.voltage_level) if rec.voltage_level and str(rec.voltage_level).isdigit() else 0
         )
         tower_nums = set()
         for f in ['tower_number', 'tower_number2']:
@@ -586,6 +583,7 @@ def layout_towers(db):
         if not towers:
             continue
         path = paths[idx % len(paths)]
+        n = len(towers)
         for i, tower in enumerate(towers):
             if tower.latitude and tower.longitude and tower.latitude != 0:
                 BOUNDS_LAT_MIN, BOUNDS_LAT_MAX = 36.5, 39.5
@@ -593,7 +591,8 @@ def layout_towers(db):
                 tower.x = round((tower.longitude - BOUNDS_LNG_MIN) / (BOUNDS_LNG_MAX - BOUNDS_LNG_MIN) * 900)
                 tower.y = round((tower.latitude - BOUNDS_LAT_MIN) / (BOUNDS_LAT_MAX - BOUNDS_LAT_MIN) * 550)
             else:
-                factor = i / (len(towers) - 1) if len(towers) > 1 else 0
+                # اگر فقط یک دکل داشتیم، از نقطه شروع مسیر استفاده می‌کنیم
+                factor = i / (n - 1) if n > 1 else 0.0
                 tower.x = round(path[0] + factor * (path[2] - path[0]))
                 tower.y = round(path[1] + factor * (path[3] - path[1]))
 
