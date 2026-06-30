@@ -29,20 +29,6 @@ function toJalali(date) {
   return { year: jy, month: jm, day: jDay - (jm-7)*30 };
 }
 
-/** بخون خطا FastAPI را به رشته فارسی تبدیل کن */
-function parseErrorMessage(err) {
-  const detail = err?.response?.data?.detail;
-  if (!detail) return err?.message || 'خطا ناشناخته';
-  if (typeof detail === 'string') return detail;
-  if (Array.isArray(detail)) {
-    return detail.map(d => {
-      const loc = d.loc ? d.loc.slice(1).join(' ← ') : '';
-      return `فیلد "${loc}": ${d.msg}`;
-    }).join(' | ');
-  }
-  return JSON.stringify(detail);
-}
-
 function AddRecordPanel({ onSuccess }) {
   const [form, setForm]   = useState(EMPTY_FORM);
   const [dateYear,  setDateYear]  = useState('');
@@ -112,30 +98,20 @@ function AddRecordPanel({ onSuccess }) {
       setMessage({ type:'error', text:'لطفاً فیلدهای الزامی را پر کنید (ستاره *)' }); return;
     }
     const executionDate = `${dateYear}/${String(dateMonth).padStart(2,'0')}/${String(dateDay).padStart(2,'0')}`;
-
-    // تبدیل مقادیر عددی از string به float (برای جلوگیری از 422)
-    const recordData = {
-      ...form,
-      pm_date: pmDateText || executionDate,
-      execution_date: executionDate,
-      team_count:       form.team_count       !== '' ? parseFloat(form.team_count)       : null,
-      personnel_count:  form.personnel_count  !== '' ? parseFloat(form.personnel_count)  : null,
-      quantity:         form.quantity         !== '' ? parseFloat(form.quantity)          : null,
-    };
-
+    const recordData = { ...form, pm_date: pmDateText||executionDate, execution_date: executionDate };
     const completePlanIds = Object.keys(selByPlan).filter(id => selByPlan[id]?.length > 0);
 
     setSubmitting(true);
     setMessage({ type:'info', text:'⏳ در حال ثبت اطلاعات...' });
     try {
-      await createRecord(recordData);
+      await createRecord(recordData, completePlanIds);
       if (completePlanIds.length > 0) await completePlans(completePlanIds);
       setMessage({ type:'success', text:`✅ رکورد با موفقیت ثبت شد${completePlanIds.length>0?' و برنامه‌های انتخاب‌شده تکمیل شدند.':'.'}` });
       if (onSuccess) await onSuccess();
       clearForm();
     } catch (err) {
-      const msg = parseErrorMessage(err);
-      setMessage({ type:'error', text: `❌ ${msg}` });
+      const msg = err?.response?.data?.message || err?.response?.data?.detail || err?.message;
+      setMessage({ type:'error', text: msg ? `❌ ${msg}` : '❌ خطا در ثبت رکورد.' });
     } finally { setSubmitting(false); }
   };
 
@@ -218,7 +194,7 @@ function AddRecordPanel({ onSuccess }) {
             <div className="arp-field">
               <label className="arp-label">🔌 سطح ولتاژ <span className="arp-req">*</span></label>
               <select className="arp-select" value={form.voltage_level} onChange={e=>setF('voltage_level',e.target.value)} required disabled={submitting}>
-                <option value="">— انتخاب کنید —</option>
+                <option value="">— ا温تخاب کنید —</option>
                 {['63','110','132','230','400'].map(v=><option key={v} value={v}>{v} کیلوولت</option>)}
               </select>
             </div>
