@@ -1,0 +1,295 @@
+/* ============================================================
+   ExcelImport — پنل ورود داده از فایل اکسل
+   هماهنگ با توکن‌های طراحی و حالت روشن/تاریک
+   ============================================================ */
+
+.xls-root {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  font-family: var(--font-body);
+  direction: rtl;
+  max-width: 900px;
+  margin: 0 auto;
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+/* ─── Header ─── */
+.xls-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 28px;
+  background: linear-gradient(135deg, #0f766e 0%, var(--color-primary) 100%);
+  color: #fff;
+}
+.xls-header-icon {
+  width: 48px; height: 48px;
+  background: rgba(255,255,255,0.18);
+  border-radius: var(--radius-md);
+  display: grid; place-items: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+.xls-header-title { margin: 0; font-size: 1.25rem; font-weight: 700; }
+.xls-header-sub { margin: 3px 0 0; font-size: 0.82rem; opacity: .85; }
+
+/* ─── Alert ─── */
+.xls-alert {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 20px 28px 0;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.7;
+  animation: xls-slideIn .25s ease;
+}
+.xls-alert--success { background: var(--color-success-bg); color: var(--color-success); border: 1px solid rgba(46,107,14,.3); }
+.xls-alert--error   { background: var(--color-error-bg);   color: var(--color-error);   border: 1px solid rgba(181,42,30,.3); }
+.xls-alert--info    { background: var(--color-info-bg);    color: var(--color-info);    border: 1px solid rgba(1,105,111,.3); }
+.xls-alert-close {
+  background: none; border: none; font-size: 1.2rem; line-height: 1;
+  cursor: pointer; opacity: .6; color: inherit; flex-shrink: 0;
+}
+.xls-alert-close:hover { opacity: 1; }
+@keyframes xls-slideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+
+/* ─── Body ─── */
+.xls-body { padding: 22px 28px 28px; }
+
+/* ─── Drop zone ─── */
+.xls-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 38px 24px;
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-2);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color .2s, background .2s, box-shadow .2s;
+}
+.xls-drop:hover,
+.xls-drop--over {
+  border-color: var(--color-primary);
+  background: var(--color-primary-faint);
+  box-shadow: 0 0 0 4px var(--color-primary-faint);
+}
+.xls-drop-icon { font-size: 2.4rem; }
+.xls-drop-title { margin: 6px 0 0; font-size: 1rem; font-weight: 700; color: var(--color-text); }
+.xls-drop-sub { margin: 0; font-size: 0.85rem; color: var(--color-text-muted); }
+.xls-drop-badge {
+  margin-top: 10px;
+  font-size: 0.75rem;
+  color: var(--color-text-faint);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 3px 12px;
+}
+
+/* ─── Selected file ─── */
+.xls-file {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1.5px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-faint);
+}
+.xls-file-icon { font-size: 1.7rem; }
+.xls-file-info { flex: 1; min-width: 0; }
+.xls-file-name {
+  font-weight: 700;
+  color: var(--color-text);
+  font-size: .92rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: ltr;
+  text-align: right;
+}
+.xls-file-size { font-size: .78rem; color: var(--color-text-muted); margin-top: 2px; }
+
+/* ─── Section title ─── */
+.xls-section-title {
+  margin: 22px 0 10px;
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  letter-spacing: .04em;
+}
+
+/* ─── Mode cards ─── */
+.xls-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.xls-mode {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  cursor: pointer;
+  transition: border-color .2s, background .2s, box-shadow .2s;
+}
+.xls-mode:hover { border-color: var(--color-primary); }
+.xls-mode--active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-faint);
+  box-shadow: 0 0 0 3px var(--color-primary-faint);
+}
+.xls-mode--danger.xls-mode--active {
+  border-color: var(--color-error);
+  background: var(--color-error-bg);
+  box-shadow: 0 0 0 3px var(--color-error-bg);
+}
+.xls-mode input { margin-top: 3px; accent-color: var(--color-primary); }
+.xls-mode-title { font-weight: 700; font-size: .9rem; color: var(--color-text); }
+.xls-mode-desc { font-size: .78rem; color: var(--color-text-muted); margin-top: 3px; line-height: 1.6; }
+
+/* ─── Checkbox ─── */
+.xls-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 12px 16px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  cursor: pointer;
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.7;
+}
+.xls-check:hover { border-color: var(--color-primary); }
+.xls-check input { margin-top: 3px; accent-color: var(--color-primary); flex-shrink: 0; }
+.xls-check-hint {
+  display: block;
+  margin-top: 2px;
+  font-size: .75rem;
+  font-weight: 500;
+  color: var(--color-text-faint);
+}
+
+/* ─── Warning ─── */.xls-warning {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: var(--color-error-bg);
+  color: var(--color-error);
+  border: 1px solid rgba(181,42,30,.3);
+  font-size: .82rem;
+  font-weight: 600;
+}
+
+/* ─── Actions ─── */
+.xls-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--color-divider);
+}
+
+.xls-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 24px;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: .9rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.xls-btn--primary {
+  background: linear-gradient(135deg, var(--color-primary), #1d6fa4);
+  color: #fff;
+  box-shadow: var(--shadow-primary);
+}
+.xls-btn--primary:hover:not(:disabled) { transform: translateY(-1px); }
+.xls-btn--ghost {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
+  padding: 7px 14px;
+  font-size: .82rem;
+}
+.xls-btn--ghost:hover:not(:disabled) {
+  color: var(--color-text);
+  border-color: var(--color-primary);
+}
+.xls-btn:disabled { opacity: .55; cursor: not-allowed; transform: none !important; }
+
+/* ─── Spinner ─── */
+.xls-spinner {
+  display: inline-block;
+  width: 15px; height: 15px;
+  border: 2.5px solid rgba(255,255,255,.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: xls-spin .7s linear infinite;
+}
+@keyframes xls-spin { to { transform: rotate(360deg); } }
+
+/* ─── Guide ─── */
+.xls-guide {
+  margin-top: 22px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  padding: 12px 16px;
+}
+.xls-guide summary {
+  cursor: pointer;
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+.xls-guide summary:hover { color: var(--color-text); }
+.xls-guide-note {
+  margin: 10px 0 12px;
+  font-size: .78rem;
+  color: var(--color-text-faint);
+  line-height: 1.9;
+}
+.xls-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+.xls-guide-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: .78rem;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+}
+.xls-guide-name { color: var(--color-text); font-weight: 600; }
+.xls-guide-item .xls-guide-note { margin: 0; color: var(--color-text-faint); }
+
+/* ─── Responsive ─── */
+@media (max-width: 640px) {
+  .xls-header { padding: 18px 16px; }
+  .xls-body { padding: 18px 16px 22px; }
+  .xls-alert { margin: 16px 16px 0; }
+  .xls-modes { grid-template-columns: 1fr; }
+}

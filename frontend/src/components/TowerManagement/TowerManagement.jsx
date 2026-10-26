@@ -105,6 +105,8 @@ function TowerManagement() {
   const [plannedTasks, setPlannedTasks] = useState([]);
   const [showLineModal, setShowLineModal] = useState(false);
   const [showTowerModal, setShowTowerModal] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncNotice, setSyncNotice] = useState(null);
   const [filters, setFilters] = useState({
     viewMode: 'all', programType: '', lineName: '',
     voltage: '', location: '', dateFrom: '', dateTo: '',
@@ -126,6 +128,26 @@ function TowerManagement() {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  const syncFromRecords = async () => {
+    if (syncing) return;
+    setSyncing(true);
+    setSyncNotice({ type: 'info', text: '⏳ در حال ساخت خطوط و دکل‌ها از رکوردهای ثبت‌شده...' });
+    try {
+      const res = await api.post('/lines-towers/import-from-records');
+      const d = res.data || {};
+      setSyncNotice({
+        type: 'success',
+        text: `✅ ${d.message || 'بارگذاری انجام شد'} — ${d.lines ?? 0} خط و ${d.towers ?? 0} دکل`,
+      });
+      await loadData();
+    } catch (err) {
+      const detail = err?.response?.data?.detail || 'بارگذاری خطوط و دکل‌ها ناموفق بود';
+      setSyncNotice({ type: 'error', text: `❌ ${detail}` });
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const parseJalaliToDate = (s) => {
     if (!s) return null;
@@ -207,8 +229,13 @@ function TowerManagement() {
           </div>
         </div>
         <div className="tm-header-actions">
-          <button className="btn-glow btn-sm" onClick={async () => { await api.post('/lines-towers/import-from-records'); loadData(); }}>
-            🔄 بارگذاری
+          <button
+            className="btn-glow btn-sm"
+            onClick={syncFromRecords}
+            disabled={syncing}
+            title="ساخت خطوط، دکل‌ها و سوابق تعمیر از رکوردهای واردشده"
+          >
+            {syncing ? '⏳ در حال بارگذاری...' : '🔄 بارگذاری'}
           </button>
           <button className="btn-glow btn-blue btn-sm" onClick={() => setShowLineModal(true)}>➕ خط جدید</button>
           <button className="btn-glow btn-amber btn-sm" onClick={async () => { await api.post('/lines-towers/update-all-tower-dates'); loadData(); }}>
@@ -216,6 +243,13 @@ function TowerManagement() {
           </button>
         </div>
       </div>
+
+      {syncNotice && (
+        <div className={`tm-notice tm-notice--${syncNotice.type}`}>
+          <span>{syncNotice.text}</span>
+          <button className="tm-notice-close" onClick={() => setSyncNotice(null)} aria-label="بستن">×</button>
+        </div>
+      )}
 
       <div className="tm-tab-bar">
         <button className={`tm-tab ${activeTab === 'map' ? 'active' : ''}`} onClick={() => setActiveTab('map')}>

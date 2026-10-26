@@ -4,6 +4,7 @@ const ALL_TABS = [
   { id: 'dashboard', label: 'داشبورد',         icon: '📊' },
   { id: 'data',      label: 'کاوش داده‌ها',     icon: '📋' },
   { id: 'add',       label: 'ورود اطلاعات',     icon: '➕' },
+  { id: 'import',    label: 'ورود از اکسل',      icon: '📥' },
   { id: 'analytics', label: 'تحلیل',            icon: '📈' },
   { id: 'report',    label: 'گزارش',             icon: '📄' },
   { id: 'towers',    label: 'مدیریت خطوط',      icon: '🗼' },
@@ -15,9 +16,13 @@ function Sidebar({ activeTab, onTabChange, role, onLogout }) {
   const [collapsed, setCollapsed] = useState(true);
 
   const permissions = role === 'admin'
-    ? 'dashboard,data,add,analytics,report,towers,grid,users'
+    ? 'dashboard,data,add,import,analytics,report,towers,grid,users'
     : (localStorage.getItem('permissions') || 'dashboard,data');
   const allowedPermissions = permissions.split(',');
+  // هر کاربری که اجازه‌ی ثبت داده دارد، می‌تواند از اکسل هم داده وارد کند
+  if (role === 'admin' || allowedPermissions.includes('add')) {
+    allowedPermissions.push('import');
+  }
   const tabs = ALL_TABS.filter(tab => allowedPermissions.includes(tab.id));
 
   useEffect(() => {

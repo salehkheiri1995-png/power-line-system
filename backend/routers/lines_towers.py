@@ -206,10 +206,13 @@ def get_or_create_line(db, line_name, voltage=0):
     if not line:
         colors = ["c1", "c2", "c3", "c4"]
         hexes = ["#3b82f6", "#f59e0b", "#8b5cf6", "#10b981"]
+        # توجه: autoflush خاموش است، بنابراین باید قبل از شمارش، خطوط معلق را flush کنیم
+        db.flush()
         idx = db.query(Line).count() % 4
         line = Line(id=line_name, name=line_name, voltage=voltage,
                     color_class=colors[idx], color_hex=hexes[idx])
         db.add(line)
+        db.flush()  # تا در همان تراکنش برای رکوردهای بعدی قابل یافتن باشد
     return line
 
 
@@ -219,7 +222,23 @@ def get_or_create_tower(db, line_id, number):
     if not tower:
         tower = Tower(id=tid, line_id=line_id, number=number)
         db.add(tower)
+        db.flush()  # جلوگیری از خطای UNIQUE در رکوردهای بعدی همین تراکنش
     return tower
+
+
+def _parse_tower_numbers(*values) -> set:
+    """شماره دکل‌ها را از مقادیر متنی مثل «29-30» یا «195,196» استخراج می‌کند."""
+    numbers = set()
+    for value in values:
+        if value is None:
+            continue
+        for part in re.split(r"[,;،/\-\s]+", str(value)):
+            part = part.strip()
+            if part.isdigit():
+                number = int(part)
+                if 0 < number < 100000:
+                    numbers.add(number)
+    return numbers
 
 
 def update_tower_dates(db, tower):
@@ -487,49 +506,91 @@ def import_from_records(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin_user),
 ):
+    """ساخت خطوط، دکل‌ها و سوابق تعمیر از رکوردهای واردشده.
+
+    این عملیات تکرارپذیر (idempotent) است؛ اجرای مجدد سوابق تکراری نمی‌سازد.
+    """
     records = db.query(PowerLineRecord).all()
-    added = 0
-    for rec in records:
-        if not rec.line_name:
-            continue
-        line = get_or_create_line(
-            db, rec.line_name, int(rec.voltage_level) if rec.voltage_level and str(rec.voltage_level).isdigit() else 0
+    if not records:
+        raise HTTPException(
+            status_code=400,
+            detail="هیچ رکوردی برای بارگذاری وجود ندارد؛ ابتدا داده‌ها را از اکسل وارد کنید.",
         )
-        tower_nums = set()
-        for f in ['tower_number', 'tower_number2']:
-            val = getattr(rec, f, None)
-            if val:
-                for part in str(val).replace(';', ',').replace('\u060c', ',').split(','):
-                    part = part.strip()
-                    if part.isdigit():
-                        tower_nums.add(int(part))
-        for num in tower_nums:
-            tower = get_or_create_tower(db, line.id, num)
-            if rec.execution_date:
-                greg = jalali_to_gregorian(rec.execution_date)
-                if greg:
-                    mrec = MaintenanceRecord(
-                        id=make_record_id(),
-                        tower_id=tower.id,
-                        date=rec.execution_date,
-                        gregorian_date=greg,
-                        type=rec.program_type or "",
-                        program_type=rec.program_type or "",
-                        description=rec.work_description or "",
-                        supervisor=rec.supervisor or "",
-                        crew=str(rec.team_count) if rec.team_count else "",
-                        personnel=str(rec.personnel_count) if rec.personnel_count else "",
-                        location=rec.location or "",
-                        status="completed",
-                    )
-                    db.add(mrec)
-                    added += 1
+
+    # سوابق موجود تا از ثبت تکراری در اجراهای بعدی جلوگیری شود
+    existing = set()
+    for rec in db.query(MaintenanceRecord).all():
+        existing.add((rec.tower_id, rec.date or "", rec.description or ""))
+
+    added = 0
+    skipped = 0
+    touched_towers = {}
+
+    try:
+        for rec in records:
+            if not rec.line_name:
+                continue
+            voltage = 0
+            if rec.voltage_level and str(rec.voltage_level).strip().isdigit():
+                voltage = int(str(rec.voltage_level).strip())
+
+            line = get_or_create_line(db, rec.line_name, voltage)
+            tower_numbers = _parse_tower_numbers(
+                rec.tower_number, rec.tower_number2, rec.extra_tower_number
+            )
+
+            for number in sorted(tower_numbers):
+                tower = get_or_create_tower(db, line.id, number)
+                touched_towers[tower.id] = tower
+
+                if not rec.execution_date:
+                    continue
+                key = (tower.id, rec.execution_date, rec.work_description or "")
+                if key in existing:
+                    skipped += 1
+                    continue
+                gregorian = jalali_to_gregorian(rec.execution_date)
+                if not gregorian:
+                    continue
+                existing.add(key)
+                db.add(MaintenanceRecord(
+                    id=make_record_id(),
+                    tower_id=tower.id,
+                    date=rec.execution_date,
+                    gregorian_date=gregorian,
+                    type=rec.program_type or "",
+                    program_type=rec.program_type or "",
+                    description=rec.work_description or "",
+                    supervisor=rec.supervisor or "",
+                    crew=str(int(rec.team_count)) if rec.team_count else "",
+                    personnel=str(int(rec.personnel_count)) if rec.personnel_count else "",
+                    location=rec.location or "",
+                    status="completed",
+                ))
+                added += 1
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"بارگذاری خطوط و دکل‌ها ناموفق بود: {exc}")
+
+    for tower in touched_towers.values():
+        update_tower_dates(db, tower)
+    try:
+        layout_towers(db)
+    except Exception:
+        pass
     db.commit()
-    for t in db.query(Tower).all():
-        update_tower_dates(db, t)
-    layout_towers(db)
-    db.commit()
-    return {"message": f"{added} رکورد تعمیر اضافه شد"}
+
+    message = f"{added} سابقه تعمیر اضافه شد"
+    if skipped:
+        message += f" و {skipped} مورد تکراری نادیده گرفته شد"
+    return {
+        "message": message,
+        "added": added,
+        "skipped": skipped,
+        "lines": db.query(Line).count(),
+        "towers": db.query(Tower).count(),
+    }
 
 
 # ========== Complete Plans ==========

@@ -43,11 +43,12 @@ export const updateRecord = (id, data) => api.put(`/records/${id}`, data);
 export const deleteRecord = (id) => api.delete(`/records/${id}`);
 
 // ----- آپلود فایل اکسل -----
-export const uploadExcel = (file) => {
+export const uploadExcel = (file, mode = 'append') => {
   const formData = new FormData();
   formData.append('file', file);
   return api.post('/upload-excel', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
+    params: { mode },
   });
 };
 

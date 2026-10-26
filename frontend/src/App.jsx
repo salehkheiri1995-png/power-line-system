@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import api, { getRecords, getFilterOptions } from './api';
 import ExcelUploader from './components/ExcelUploader';
+import ExcelImport from './components/ExcelImport';
 import Login from './components/Login';
 import AddModal from './components/AddModal';
 import AddRecordPanel from './components/AddRecordPanel';
@@ -142,7 +143,7 @@ function App() {
 
   if (!isLoggedIn) return <Login onLogin={handleLogin} />;
 
-  const alwaysVisibleTabs = ['add', 'users', 'towers', 'grid'];
+  const alwaysVisibleTabs = ['add', 'import', 'users', 'towers', 'grid'];
   const showAlwaysVisible = alwaysVisibleTabs.includes(activeTab);
 
   return (
@@ -184,6 +185,9 @@ function App() {
         <Suspense fallback={<div className="skeleton" style={{ height: '400px', borderRadius: 'var(--radius-lg)' }} />}>
           {activeTab === 'add' && (
             <AddRecordPanel onSuccess={() => loadInitialData({ silent: true })} />
+          )}
+          {activeTab === 'import' && (
+            <ExcelImport onDone={() => loadInitialData({ silent: true })} />
           )}
           {activeTab === 'towers' && <TowerManagement />}
           {activeTab === 'users' && <UserManagement />}

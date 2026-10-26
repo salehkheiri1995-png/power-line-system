@@ -1306,6 +1306,32 @@ select.input-field {
   flex-wrap: wrap;
 }
 
+/* ─── پیام بارگذاری ─── */
+.tm-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 1.7;
+}
+.tm-notice--success { background: var(--color-success-bg); color: var(--color-success); border: 1px solid rgba(46,107,14,.3); }
+.tm-notice--error   { background: var(--color-error-bg);   color: var(--color-error);   border: 1px solid rgba(181,42,30,.3); }
+.tm-notice--info    { background: var(--color-info-bg);    color: var(--color-info);    border: 1px solid rgba(1,105,111,.3); }
+.tm-notice-close {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: .6;
+}
+.tm-notice-close:hover { opacity: 1; }
+
 /* ─── نوار تب ─── */
 .tm-tab-bar {
   display: flex;

@@ -4,7 +4,7 @@ from typing import List, Optional
 from database import get_db
 from models import Base, PowerLineRecord, User
 from schemas import Record, RecordCreate, RecordUpdate, FilterOptions
-from services.excel_parser import parse_excel
+from services.excel_parser import parse_workbook
 from auth import get_current_user, get_current_admin_user
 import tempfile
 import os
@@ -84,27 +84,74 @@ def delete_record(
 
 # ===================== آپلود فایل اکسل =====================
 @router.post("/upload-excel")
-def upload_excel(
+async def upload_excel(
     file: UploadFile = File(...),
+    mode: str = Query("append", description="append = افزودن به داده‌های موجود، replace = جایگزینی کامل"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    """ورود رکوردها از فایل اکسل (xlsx).
+
+    ساختار فایل به‌صورت خودکار تشخیص داده می‌شود؛ سطر هدر می‌تواند در
+    پانزده سطر اول باشد و شیت‌های اطلاعاتی نادیده گرفته می‌شوند.
+    """
+    if mode not in ("append", "replace"):
+        raise HTTPException(status_code=400, detail="mode باید append یا replace باشد")
+
+    filename = (file.filename or "").lower()
+    if filename.endswith(".xls"):
+        raise HTTPException(
+            status_code=400,
+            detail="فرمت قدیمی xls پشتیبانی نمی‌شود؛ فایل را با اکسل به xlsx تبدیل کنید.",
+        )
+    if not filename.endswith((".xlsx", ".xlsm")):
+        raise HTTPException(status_code=400, detail="فقط فایل اکسل با پسوند xlsx یا xlsm پذیرفته می‌شود.")
+
+    contents = await file.read()
+    if not contents:
+        raise HTTPException(status_code=400, detail="فایل خالی است.")
+
+    tmp_path = None
     try:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
-            tmp.write(file.file.read())
+            tmp.write(contents)
             tmp_path = tmp.name
-        records = parse_excel(tmp_path)
-        os.unlink(tmp_path)
-
-        count = 0
-        for rec in records:
-            db_record = PowerLineRecord(**rec)
-            db.add(db_record)
-            count += 1
-        db.commit()
-        return {"message": f"{count} records imported successfully", "count": count}
+        result = parse_workbook(tmp_path)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=f"خواندن فایل ناموفق بود: {e}")
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+    records = result["records"]
+    if not records:
+        raise HTTPException(
+            status_code=400,
+            detail="هیچ رکوردی در فایل پیدا نشد. مطمئن شوید سطر عنوان ستون‌ها و داده‌ها در فایل وجود دارد.",
+        )
+
+    try:
+        if mode == "replace":
+            db.query(PowerLineRecord).delete()
+        db.bulk_insert_mappings(PowerLineRecord, records)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"ذخیره در دیتابیس ناموفق بود: {e}")
+
+    total = db.query(PowerLineRecord).count()
+    replaced = mode == "replace"
+    message = (
+        f"{len(records)} رکورد با موفقیت وارد شد"
+        + (" (داده‌های قبلی جایگزین شد)" if replaced else "")
+    )
+    return {
+        "message": message,
+        "count": len(records),
+        "total": total,
+        "mode": mode,
+        "sheets": result["sheets"],
+    }
 
 
 # ===================== فیلترها =====================
